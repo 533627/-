@@ -99,6 +99,12 @@ test.describe("账号终端", () => {
   });
 
   test("最高管理员创建账号后只在当次结果看到新密码", async ({ page }) => {
+    const consoleIssues: string[] = [];
+    page.on("console", (message) => {
+      if (message.type() === "error" || message.type() === "warning") {
+        consoleIssues.push(message.text());
+      }
+    });
     const createdUsername = `${prefix}_service`;
     await signIn(page, ownerUsername, initialPassword);
     await page.goto("/accounts");
@@ -136,6 +142,7 @@ test.describe("账号终端", () => {
         () => document.documentElement.scrollWidth > window.innerWidth,
       ),
     ).toBe(false);
+    expect(consoleIssues).toEqual([]);
   });
 
   test("重置密码和停用账号都会让员工旧会话立即失效", async ({
