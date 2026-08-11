@@ -60,6 +60,16 @@ enum ProjectMemberRole {
   MEMBER
 }
 
+enum ProjectEventType {
+  CREATED
+  STATUS_CHANGED
+  LEAD_CHANGED
+  MEMBER_ADDED
+  MEMBER_REMOVED
+  DEPARTMENT_ADDED
+  DEPARTMENT_REMOVED
+}
+
 model Department {
   id                     String                        @id @default(uuid()) @db.Uuid
   code                   String                        @unique @db.VarChar(50)
@@ -108,6 +118,7 @@ model User {
   addedProjectMembers         ProjectMember[]               @relation("ProjectMemberAddedBy")
   addedProjectDepartments     ProjectDepartment[]           @relation("ProjectDepartmentAddedBy")
   createdProjectConversations ProjectConversation[]         @relation("ProjectConversationCreatedBy")
+  projectEvents               ProjectEvent[]                @relation("ProjectEventActor")
 
   @@index([role])
   @@index([isActive])
@@ -199,6 +210,7 @@ model Project {
   name                  String               @db.VarChar(200)
   objective             String               @db.Text
   status                ProjectStatus        @default(PREPARING)
+  revision              Int                  @default(1)
   sourceBusinessModelId String               @db.Uuid
   sourceBusinessModel   BusinessModel        @relation(fields: [sourceBusinessModelId], references: [id], onDelete: Restrict)
   sourceRequestId       String               @unique @db.Uuid
@@ -214,12 +226,30 @@ model Project {
   members               ProjectMember[]
   departments           ProjectDepartment[]
   conversation          ProjectConversation?
+  events                ProjectEvent[]
 
   @@index([status, updatedAt])
   @@index([sourceBusinessModelId])
   @@index([leadId])
   @@index([createdById])
   @@map("projects")
+}
+
+model ProjectEvent {
+  id        String           @id @default(uuid()) @db.Uuid
+  projectId String           @db.Uuid
+  project   Project          @relation(fields: [projectId], references: [id], onDelete: Restrict)
+  actorId   String
+  actor     User             @relation("ProjectEventActor", fields: [actorId], references: [id], onDelete: Restrict)
+  type      ProjectEventType
+  revision  Int
+  details   Json
+  createdAt DateTime         @default(now()) @db.Timestamptz(3)
+
+  @@unique([projectId, revision])
+  @@index([actorId])
+  @@index([type, createdAt])
+  @@map("project_events")
 }
 
 model ProjectMember {

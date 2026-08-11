@@ -75,6 +75,15 @@ export async function createProjectFromApprovedRequest(
           await transaction.projectConversation.create({
             data: { projectId: project.id, createdById: actor.id },
           });
+          await transaction.projectEvent.create({
+            data: {
+              projectId: project.id,
+              actorId: actor.id,
+              type: "CREATED",
+              revision: project.revision,
+              details: { sourceRequestId: request.id },
+            },
+          });
           return { project, created: true as const };
         },
         { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },

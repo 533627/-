@@ -44,6 +44,7 @@ test.describe("执行建议与立项申请", () => {
 
   test.beforeEach(async () => { await database.rateLimit.deleteMany(); });
   test.afterAll(async () => {
+    await database.projectEvent.deleteMany({ where: { project: { sourceBusinessModelId: businessModelId } } });
     await database.projectConversation.deleteMany({ where: { project: { sourceBusinessModelId: businessModelId } } });
     await database.projectDepartment.deleteMany({ where: { project: { sourceBusinessModelId: businessModelId } } });
     await database.projectMember.deleteMany({ where: { project: { sourceBusinessModelId: businessModelId } } });

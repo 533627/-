@@ -46,6 +46,7 @@ describeWithDatabase.sequential("approved project request conversion", () => {
   });
 
   afterAll(async () => {
+    await database.projectEvent.deleteMany({ where: { project: { sourceBusinessModelId: businessModelId } } });
     await database.projectConversation.deleteMany({ where: { project: { sourceBusinessModelId: businessModelId } } });
     await database.projectDepartment.deleteMany({ where: { project: { sourceBusinessModelId: businessModelId } } });
     await database.projectMember.deleteMany({ where: { project: { sourceBusinessModelId: businessModelId } } });
@@ -94,6 +95,9 @@ describeWithDatabase.sequential("approved project request conversion", () => {
     await expect(database.projectConversation.findUniqueOrThrow({
       where: { projectId: result.project.id },
     })).resolves.toMatchObject({ createdById: ownerId });
+    await expect(database.projectEvent.findUniqueOrThrow({
+      where: { projectId_revision: { projectId: result.project.id, revision: 1 } },
+    })).resolves.toMatchObject({ actorId: ownerId, type: "CREATED" });
   });
 
   it("returns the same project on repeated conversion without duplicating related rows", async () => {
