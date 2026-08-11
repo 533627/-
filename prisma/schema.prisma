@@ -17,39 +17,62 @@ enum UserRole {
 }
 
 model Department {
-  id        String   @id @default(uuid()) @db.Uuid
-  code      String   @unique @db.VarChar(50)
-  name      String   @unique @db.VarChar(100)
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now()) @db.Timestamptz(3)
-  updatedAt DateTime @updatedAt @db.Timestamptz(3)
-  members   User[]
+  id                     String                        @id @default(uuid()) @db.Uuid
+  code                   String                        @unique @db.VarChar(50)
+  name                   String                        @unique @db.VarChar(100)
+  isActive               Boolean                       @default(true)
+  createdAt              DateTime                      @default(now()) @db.Timestamptz(3)
+  updatedAt              DateTime                      @updatedAt @db.Timestamptz(3)
+  members                User[]
+  membershipOrigins      DepartmentMembershipHistory[] @relation("MembershipFromDepartment")
+  membershipDestinations DepartmentMembershipHistory[] @relation("MembershipToDepartment")
 
   @@index([isActive])
   @@map("departments")
 }
 
 model User {
-  id              String      @id
-  name            String
-  email           String      @unique
-  emailVerified   Boolean     @default(false)
-  image           String?
-  createdAt       DateTime    @default(now())
-  updatedAt       DateTime    @updatedAt
-  username        String?     @unique
-  displayUsername String?
-  role            UserRole    @default(EMPLOYEE)
-  isActive        Boolean     @default(true)
-  departmentId    String?     @db.Uuid
-  department      Department? @relation(fields: [departmentId], references: [id], onDelete: Restrict)
-  sessions        Session[]
-  accounts        Account[]
+  id                         String                        @id
+  name                       String
+  email                      String                        @unique
+  emailVerified              Boolean                       @default(false)
+  image                      String?
+  createdAt                  DateTime                      @default(now())
+  updatedAt                  DateTime                      @updatedAt
+  username                   String?                       @unique
+  displayUsername            String?
+  role                       UserRole                      @default(EMPLOYEE)
+  isActive                   Boolean                       @default(true)
+  departmentId               String?                       @db.Uuid
+  department                 Department?                   @relation(fields: [departmentId], references: [id], onDelete: Restrict)
+  sessions                   Session[]
+  accounts                   Account[]
+  membershipChanges          DepartmentMembershipHistory[] @relation("MembershipChangedMember")
+  performedMembershipChanges DepartmentMembershipHistory[] @relation("MembershipChangedBy")
 
   @@index([role])
   @@index([isActive])
   @@index([departmentId])
   @@map("user")
+}
+
+model DepartmentMembershipHistory {
+  id               String      @id @default(uuid()) @db.Uuid
+  memberId         String
+  member           User        @relation("MembershipChangedMember", fields: [memberId], references: [id], onDelete: Restrict)
+  fromDepartmentId String?     @db.Uuid
+  fromDepartment   Department? @relation("MembershipFromDepartment", fields: [fromDepartmentId], references: [id], onDelete: Restrict)
+  toDepartmentId   String      @db.Uuid
+  toDepartment     Department  @relation("MembershipToDepartment", fields: [toDepartmentId], references: [id], onDelete: Restrict)
+  changedById      String
+  changedBy        User        @relation("MembershipChangedBy", fields: [changedById], references: [id], onDelete: Restrict)
+  changedAt        DateTime    @default(now()) @db.Timestamptz(3)
+
+  @@index([memberId, changedAt])
+  @@index([fromDepartmentId])
+  @@index([toDepartmentId])
+  @@index([changedById])
+  @@map("department_membership_history")
 }
 
 model Session {
