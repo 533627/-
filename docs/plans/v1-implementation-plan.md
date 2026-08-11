@@ -177,17 +177,17 @@ All functional slices
 **Likely files:** `scripts/bootstrap-admin.ts`, `src/features/accounts/bootstrap.ts`, `src/features/accounts/bootstrap.test.ts`, `package.json`  
 **Scope:** M
 
-#### Task B4：Deliver login and protected application shell
+#### Task B4：Deliver login and protected application shell（已完成）
 
 **Description:** 实现中文登录页、响应式侧栏/移动导航、当前用户与部门信息，以及按角色显示的导航入口。
 
 **Acceptance:**
 
-- [ ] 手机与电脑均可完成登录和退出。
-- [ ] 登录后默认进入所属部门/角色首页。
-- [ ] 导航只显示角色可访问模块，直接访问仍由服务端拒绝。
+- [x] 手机与电脑均可完成登录和退出。
+- [x] 登录后默认进入所属部门/角色首页。
+- [x] 导航只显示角色可访问模块，直接访问仍由服务端拒绝。
 
-**Verify:** `pnpm test -- login-ui && pnpm test:e2e --grep "登录" && pnpm build`
+**Verify:** `pnpm test -- --run && pnpm test:e2e && pnpm build`
 
 **Dependencies:** B2, B3  
 **Likely files:** `src/app/(auth)/login/page.tsx`, `src/app/(protected)/layout.tsx`, `src/components/app-shell.tsx`, `src/features/auth/login-form.tsx`, `e2e/login.spec.ts`  
