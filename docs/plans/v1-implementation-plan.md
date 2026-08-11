@@ -250,15 +250,15 @@ All functional slices
 **Likely files:** `src/features/business-models/actions.ts`, `src/features/business-models/model-form.tsx`, `src/app/(protected)/business-models/page.tsx`, `src/app/(protected)/business-models/[id]/page.tsx`, `src/features/business-models/business-models.test.ts`  
 **Scope:** M
 
-#### Task C2：Add execution suggestions and project requests
+#### Task C2：Add execution suggestions and project requests（已完成）
 
 **Description:** 运营组长可在原文旁添加建议并提交立项申请；最高管理员可查看、拒绝或批准。
 
 **Acceptance:**
 
-- [ ] 建议与原文分开保存且不能覆盖原文。
-- [ ] 同一申请不能被重复审批。
-- [ ] 拒绝必须填写原因并通知申请人。
+- [x] 建议与原文分开保存且不能覆盖原文。
+- [x] 同一申请不能被重复审批。
+- [x] 拒绝必须填写原因并通知申请人。
 
 **Verify:** `pnpm test -- project-requests && pnpm build`
 
