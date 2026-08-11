@@ -90,7 +90,7 @@ export async function preparePasswordReset(
     hashPassword,
   },
 ) {
-  assertCanManageTarget(actor, target);
+  assertCanManageAccount(actor, target);
   const password = dependencies.generatePassword();
   assertGeneratedPassword(password);
 
@@ -105,13 +105,16 @@ export function assertAccountStatusChange(
   target: ManagedAccountTarget,
   nextIsActive: boolean,
 ) {
-  assertCanManageTarget(actor, target);
+  assertCanManageAccount(actor, target);
   if (actor.id === target.id && !nextIsActive) {
     throw new AccountManagementError("SELF_DEACTIVATION");
   }
 }
 
-function assertCanManageTarget(actor: Actor, target: ManagedAccountTarget) {
+export function assertCanManageAccount(
+  actor: Actor,
+  target: ManagedAccountTarget,
+) {
   if (!canAdministerAccount(actor, target.role)) {
     throw new AccountManagementError("ACCOUNT_OPERATION_FORBIDDEN");
   }
