@@ -30,6 +30,23 @@ enum BusinessModelEventType {
   DELETED
 }
 
+enum ProjectRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum ProjectRequestEventType {
+  SUBMITTED
+  APPROVED
+  REJECTED
+}
+
+enum NotificationType {
+  PROJECT_REQUEST_APPROVED
+  PROJECT_REQUEST_REJECTED
+}
+
 model Department {
   id                     String                        @id @default(uuid()) @db.Uuid
   code                   String                        @unique @db.VarChar(50)
@@ -66,6 +83,11 @@ model User {
   createdBusinessModels      BusinessModel[]               @relation("BusinessModelCreatedBy")
   updatedBusinessModels      BusinessModel[]               @relation("BusinessModelUpdatedBy")
   businessModelEvents        BusinessModelEvent[]          @relation("BusinessModelEventActor")
+  executionSuggestions       ExecutionSuggestion[]         @relation("ExecutionSuggestionAuthor")
+  projectRequests            ProjectRequest[]              @relation("ProjectRequestApplicant")
+  reviewedProjectRequests    ProjectRequest[]              @relation("ProjectRequestReviewer")
+  projectRequestEvents       ProjectRequestEvent[]         @relation("ProjectRequestEventActor")
+  notifications              Notification[]
 
   @@index([role])
   @@index([isActive])
@@ -74,29 +96,31 @@ model User {
 }
 
 model BusinessModel {
-  id                 String               @id @default(uuid()) @db.Uuid
-  title              String               @db.VarChar(200)
-  category           String               @db.VarChar(100)
-  targetPlatform     String               @db.VarChar(100)
-  opportunity        String               @db.Text
-  businessLogic      String               @db.Text
-  executionPlan      String               @db.Text
-  costAssumptions    String               @default("") @db.Text
-  revenueAssumptions String               @default("") @db.Text
-  risks              String               @default("") @db.Text
-  tags               String[]             @default([])
-  keywords           String[]             @default([])
-  status             BusinessModelStatus  @default(ACTIVE)
-  revision           Int                  @default(1)
-  archivedAt         DateTime?            @db.Timestamptz(3)
-  deletedAt          DateTime?            @db.Timestamptz(3)
-  createdById        String
-  createdBy          User                 @relation("BusinessModelCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
-  updatedById        String
-  updatedBy          User                 @relation("BusinessModelUpdatedBy", fields: [updatedById], references: [id], onDelete: Restrict)
-  createdAt          DateTime             @default(now()) @db.Timestamptz(3)
-  updatedAt          DateTime             @updatedAt @db.Timestamptz(3)
-  events             BusinessModelEvent[]
+  id                   String                @id @default(uuid()) @db.Uuid
+  title                String                @db.VarChar(200)
+  category             String                @db.VarChar(100)
+  targetPlatform       String                @db.VarChar(100)
+  opportunity          String                @db.Text
+  businessLogic        String                @db.Text
+  executionPlan        String                @db.Text
+  costAssumptions      String                @default("") @db.Text
+  revenueAssumptions   String                @default("") @db.Text
+  risks                String                @default("") @db.Text
+  tags                 String[]              @default([])
+  keywords             String[]              @default([])
+  status               BusinessModelStatus   @default(ACTIVE)
+  revision             Int                   @default(1)
+  archivedAt           DateTime?             @db.Timestamptz(3)
+  deletedAt            DateTime?             @db.Timestamptz(3)
+  createdById          String
+  createdBy            User                  @relation("BusinessModelCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
+  updatedById          String
+  updatedBy            User                  @relation("BusinessModelUpdatedBy", fields: [updatedById], references: [id], onDelete: Restrict)
+  createdAt            DateTime              @default(now()) @db.Timestamptz(3)
+  updatedAt            DateTime              @updatedAt @db.Timestamptz(3)
+  events               BusinessModelEvent[]
+  executionSuggestions ExecutionSuggestion[]
+  projectRequests      ProjectRequest[]
 
   @@index([status, updatedAt])
   @@index([category])
@@ -105,6 +129,81 @@ model BusinessModel {
   @@index([keywords], type: Gin)
   @@index([createdById])
   @@map("business_models")
+}
+
+model ExecutionSuggestion {
+  id              String          @id @default(uuid()) @db.Uuid
+  businessModelId String          @db.Uuid
+  businessModel   BusinessModel   @relation(fields: [businessModelId], references: [id], onDelete: Restrict)
+  authorId        String
+  author          User            @relation("ExecutionSuggestionAuthor", fields: [authorId], references: [id], onDelete: Restrict)
+  content         String          @db.Text
+  createdAt       DateTime        @default(now()) @db.Timestamptz(3)
+  projectRequest  ProjectRequest?
+
+  @@index([businessModelId, createdAt])
+  @@index([authorId])
+  @@map("execution_suggestions")
+}
+
+model ProjectRequest {
+  id              String                @id @default(uuid()) @db.Uuid
+  businessModelId String                @db.Uuid
+  businessModel   BusinessModel         @relation(fields: [businessModelId], references: [id], onDelete: Restrict)
+  suggestionId    String                @unique @db.Uuid
+  suggestion      ExecutionSuggestion   @relation(fields: [suggestionId], references: [id], onDelete: Restrict)
+  proposedName    String                @db.VarChar(200)
+  objective       String                @db.Text
+  status          ProjectRequestStatus  @default(PENDING)
+  version         Int                   @default(1)
+  requestedById   String
+  requestedBy     User                  @relation("ProjectRequestApplicant", fields: [requestedById], references: [id], onDelete: Restrict)
+  reviewedById    String?
+  reviewedBy      User?                 @relation("ProjectRequestReviewer", fields: [reviewedById], references: [id], onDelete: Restrict)
+  reviewedAt      DateTime?             @db.Timestamptz(3)
+  rejectionReason String?               @db.Text
+  createdAt       DateTime              @default(now()) @db.Timestamptz(3)
+  updatedAt       DateTime              @updatedAt @db.Timestamptz(3)
+  events          ProjectRequestEvent[]
+
+  @@index([businessModelId, status, createdAt])
+  @@index([requestedById, status, createdAt])
+  @@index([reviewedById])
+  @@map("project_requests")
+}
+
+model ProjectRequestEvent {
+  id        String                  @id @default(uuid()) @db.Uuid
+  requestId String                  @db.Uuid
+  request   ProjectRequest          @relation(fields: [requestId], references: [id], onDelete: Restrict)
+  actorId   String
+  actor     User                    @relation("ProjectRequestEventActor", fields: [actorId], references: [id], onDelete: Restrict)
+  type      ProjectRequestEventType
+  version   Int
+  note      String?                 @db.Text
+  createdAt DateTime                @default(now()) @db.Timestamptz(3)
+
+  @@unique([requestId, version])
+  @@index([actorId])
+  @@index([type, createdAt])
+  @@map("project_request_events")
+}
+
+model Notification {
+  id          String           @id @default(uuid()) @db.Uuid
+  recipientId String
+  recipient   User             @relation(fields: [recipientId], references: [id], onDelete: Restrict)
+  type        NotificationType
+  title       String           @db.VarChar(200)
+  message     String           @db.Text
+  resourceId  String
+  isRead      Boolean          @default(false)
+  createdAt   DateTime         @default(now()) @db.Timestamptz(3)
+  readAt      DateTime?        @db.Timestamptz(3)
+
+  @@index([recipientId, isRead, createdAt])
+  @@index([resourceId])
+  @@map("notifications")
 }
 
 model BusinessModelEvent {
