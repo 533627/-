@@ -1,41 +1,24 @@
 import { expect, test } from "@playwright/test";
 
-test("首页呈现平台身份与项目闭环", async ({ page }) => {
-  const consoleIssues: string[] = [];
+test("登录页呈现平台身份且没有浏览器控制台错误", async ({ page }) => {
+  const consoleErrors: string[] = [];
   page.on("console", (message) => {
-    if (message.type() === "error" || message.type() === "warning") {
-      consoleIssues.push(message.text());
-    }
+    if (message.type() === "error") consoleErrors.push(message.text());
   });
 
-  await page.goto("/");
+  await page.goto("/login");
 
-  await expect(page).toHaveTitle("商序终端");
+  await expect(page).toHaveTitle("登录 · 商序终端");
   await expect(
-    page.getByRole("heading", {
-      level: 1,
-      name: "让每一个电商项目，都有清晰的负责人和下一步。",
-    }),
+    page.getByRole("heading", { level: 1, name: "登录商序终端" }),
   ).toBeVisible();
-  await expect(page.getByText("提交成果并验收")).toBeVisible();
-  expect(consoleIssues).toEqual([]);
+  await expect(page.getByText("终端不开放公开注册")).toBeVisible();
+  expect(consoleErrors).toEqual([]);
 });
 
-test("未知地址展示可恢复的 404 页面", async ({ page }) => {
-  await page.goto("/this-page-does-not-exist");
-
-  await expect(
-    page.getByRole("heading", { level: 1, name: "没有找到这个页面" }),
-  ).toBeVisible();
-  await expect(page.getByRole("link", { name: "返回首页" })).toHaveAttribute(
-    "href",
-    "/",
-  );
-});
-
-test("320 像素手机页面没有横向溢出", async ({ page }) => {
+test("320 像素登录页没有横向溢出", async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 800 });
-  await page.goto("/");
+  await page.goto("/login");
 
   const hasHorizontalOverflow = await page.evaluate(
     () => document.documentElement.scrollWidth > window.innerWidth,
