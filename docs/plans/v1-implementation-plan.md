@@ -89,15 +89,15 @@ All functional slices
 
 ### Phase A — Foundation
 
-#### Task A1：Initialize repository and application skeleton
+#### Task A1：Initialize repository and application skeleton（已完成）
 
 **Description:** 在隔离目录中初始化 Git、Next.js、TypeScript、Tailwind CSS 4、daisyUI 5、ESLint、Vitest 和 Playwright，建立环境变量模板与安全忽略规则。
 
 **Acceptance:**
 
-- [ ] 首页、404 和全局错误页可渲染。
-- [ ] `.env*`、构建产物和上传临时文件不会进入 Git。
-- [ ] 锁文件固定所有依赖版本。
+- [x] 首页、404 和全局错误页可渲染。
+- [x] `.env*`、构建产物和上传临时文件不会进入 Git。
+- [x] 锁文件固定所有依赖版本。
 
 **Verify:** `pnpm lint && pnpm typecheck && pnpm test && pnpm build`
 
