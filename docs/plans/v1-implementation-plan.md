@@ -282,20 +282,20 @@ All functional slices
 **Likely files:** `src/features/projects/create-from-model.ts`, `src/features/projects/create-from-model.test.ts`, `prisma/schema.prisma`, generated migration  
 **Scope:** M
 
-#### Task C4：Build project detail and member management
+#### Task C4：Build project detail and member management（已完成）
 
 **Description:** 实现项目列表、详情、状态、负责人和成员管理，移除成员后立即收回访问权。
 
 **Acceptance:**
 
-- [ ] 最高管理员可增删项目成员和参与部门。
-- [ ] 非项目成员不能查看项目详情。
-- [ ] 项目状态和成员变更进入时间线。
+- [x] 最高管理员可增删项目成员和参与部门。
+- [x] 非项目成员不能查看项目详情。
+- [x] 项目状态和成员变更进入时间线。
 
-**Verify:** `pnpm test -- projects && pnpm test:e2e --grep "项目成员"`
+**Verify:** `pnpm test`（124 项）&& `pnpm test:e2e`（21 项）&& `pnpm build`
 
 **Dependencies:** C3  
-**Likely files:** `src/features/projects/actions.ts`, `src/features/projects/member-manager.tsx`, `src/app/(protected)/projects/page.tsx`, `src/app/(protected)/projects/[id]/page.tsx`, `src/features/projects/projects.test.ts`  
+**Implemented files:** `src/features/projects/project-store.ts`, `src/features/projects/project-management-panel.tsx`, `src/features/projects/project-timeline.tsx`, `src/app/(protected)/projects/page.tsx`, `src/app/(protected)/projects/[id]/page.tsx`, `e2e/project-members.spec.ts`
 **Scope:** M
 
 #### Checkpoint C
