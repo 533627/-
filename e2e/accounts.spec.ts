@@ -21,9 +21,11 @@ test.describe("账号终端", () => {
   const departmentId = randomUUID();
   const ownerId = randomUUID();
   const operationsAdminId = randomUUID();
+  const departmentManagerId = randomUUID();
   const employeeId = randomUUID();
   const ownerUsername = `${prefix}_owner`;
   const operationsUsername = `${prefix}_ops`;
+  const departmentManagerUsername = `${prefix}_manager`;
   const employeeUsername = `${prefix}_employee`;
 
   test.beforeAll(async () => {
@@ -50,12 +52,23 @@ test.describe("账号终端", () => {
       departmentId,
     });
     await createUser({
+      id: departmentManagerId,
+      username: departmentManagerUsername,
+      name: "账号测试部门组长",
+      role: "DEPARTMENT_MANAGER",
+      departmentId,
+    });
+    await createUser({
       id: employeeId,
       username: employeeUsername,
       name: "账号测试员工",
       role: "EMPLOYEE",
       departmentId,
     });
+  });
+
+  test.beforeEach(async () => {
+    await database.rateLimit.deleteMany();
   });
 
   test.afterAll(async () => {
@@ -76,12 +89,21 @@ test.describe("账号终端", () => {
     ).toBeVisible();
   });
 
+  test("部门组长不能进入账号终端", async ({ page }) => {
+    await signIn(page, departmentManagerUsername, initialPassword);
+    await page.goto("/accounts");
+
+    await expect(
+      page.getByRole("heading", { level: 1, name: "没有找到这个页面" }),
+    ).toBeVisible();
+  });
+
   test("最高管理员创建账号后只在当次结果看到新密码", async ({ page }) => {
     const createdUsername = `${prefix}_service`;
     await signIn(page, ownerUsername, initialPassword);
     await page.goto("/accounts");
     await page.getByRole("button", { name: "创建员工账号" }).click();
-    await page.getByLabel("员工姓名").fill("客服小周");
+    await page.getByLabel("员工姓名", { exact: true }).fill("客服小周");
     await page.getByLabel("登录账号").fill(createdUsername);
     await page.getByLabel("账号角色").selectOption("EMPLOYEE");
     await page.getByLabel("所属部门").selectOption(departmentId);
@@ -108,6 +130,12 @@ test.describe("账号终端", () => {
     await page.reload();
     await expect(page.getByTestId("one-time-password")).toHaveCount(0);
     await expect(page.getByText(`@${createdUsername}`)).toBeVisible();
+    await page.setViewportSize({ width: 320, height: 800 });
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth > window.innerWidth,
+      ),
+    ).toBe(false);
   });
 
   test("重置密码和停用账号都会让员工旧会话立即失效", async ({
@@ -158,7 +186,11 @@ test.describe("账号终端", () => {
     id: string;
     username: string;
     name: string;
-    role: "SUPER_ADMIN" | "OPERATIONS_ADMIN" | "EMPLOYEE";
+    role:
+      | "SUPER_ADMIN"
+      | "OPERATIONS_ADMIN"
+      | "DEPARTMENT_MANAGER"
+      | "EMPLOYEE";
     departmentId: string | null;
   }) {
     await database.user.create({
