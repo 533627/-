@@ -266,15 +266,15 @@ All functional slices
 **Likely files:** `src/features/project-requests/actions.ts`, `src/features/project-requests/request-panel.tsx`, `src/app/(protected)/project-requests/page.tsx`, `src/features/project-requests/project-requests.test.ts`  
 **Scope:** M
 
-#### Task C3：Convert an approved record into a project
+#### Task C3：Convert an approved record into a project（已完成）
 
 **Description:** 在单个数据库事务中创建项目、来源关联、初始成员和项目协作群，防止半成功状态。
 
 **Acceptance:**
 
-- [ ] 每个已批准申请最多生成一个项目。
-- [ ] 项目与原商业模式保持不可丢失的来源关联。
-- [ ] 项目创建和协作群创建要么同时成功，要么同时失败。
+- [x] 每个已批准申请最多生成一个项目。
+- [x] 项目与原商业模式保持不可丢失的来源关联。
+- [x] 项目创建和协作群创建要么同时成功，要么同时失败。
 
 **Verify:** `pnpm test -- project-conversion`
 
