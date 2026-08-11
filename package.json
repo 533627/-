@@ -10,6 +10,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "bootstrap:admin": "tsx scripts/bootstrap-admin.ts",
     "db:dev": "prisma dev --detach --name company-ops-terminal",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
