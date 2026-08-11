@@ -4,6 +4,7 @@ node_modules/
 # Next.js output
 .next/
 out/
+/src/generated/prisma/
 
 # Test output
 coverage/
