@@ -11,6 +11,7 @@ describe("role-aware workspace navigation", () => {
     expect(getNavigationForRole("SUPER_ADMIN").map(({ href }) => href)).toEqual([
       "/",
       "/business-models",
+      "/project-requests",
       "/projects",
       "/tasks",
       "/conversations",
@@ -27,6 +28,7 @@ describe("role-aware workspace navigation", () => {
 
     expect(hrefs).toContain("/accounts");
     expect(hrefs).toContain("/business-models");
+    expect(hrefs).not.toContain("/project-requests");
     expect(hrefs).toContain("/departments");
     expect(hrefs).not.toContain("/audit");
   });

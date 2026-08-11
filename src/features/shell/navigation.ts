@@ -25,6 +25,13 @@ const WORKSPACE_NAVIGATION = [
     capability: "BUSINESS_MODEL_VIEW",
   },
   {
+    slug: "project-requests",
+    href: "/project-requests",
+    label: "立项审批",
+    description: "查看并审批运营提交的立项申请",
+    capability: "PROJECT_REQUEST_REVIEW",
+  },
+  {
     slug: "projects",
     href: "/projects",
     label: "项目协作",
