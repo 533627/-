@@ -1,0 +1,30 @@
+# Dependencies
+node_modules/
+
+# Next.js output
+.next/
+out/
+
+# Test output
+coverage/
+playwright-report/
+test-results/
+*.tsbuildinfo
+
+# Local environment and secrets
+.env
+.env.local
+.env.*.local
+!.env.example
+*.pem
+*.key
+
+# Logs and local tooling
+*.log
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Upload scratch space
+tmp/uploads/

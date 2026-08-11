@@ -1,0 +1,13 @@
+@import "tailwindcss";
+
+@plugin "daisyui" {
+  themes: corporate --default;
+}
+
+html {
+  min-width: 320px;
+}
+
+body {
+  min-height: 100vh;
+}
