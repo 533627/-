@@ -16,6 +16,20 @@ enum UserRole {
   EMPLOYEE
 }
 
+enum BusinessModelStatus {
+  ACTIVE
+  ARCHIVED
+  DELETED
+}
+
+enum BusinessModelEventType {
+  CREATED
+  UPDATED
+  ARCHIVED
+  RESTORED
+  DELETED
+}
+
 model Department {
   id                     String                        @id @default(uuid()) @db.Uuid
   code                   String                        @unique @db.VarChar(50)
@@ -49,11 +63,65 @@ model User {
   accounts                   Account[]
   membershipChanges          DepartmentMembershipHistory[] @relation("MembershipChangedMember")
   performedMembershipChanges DepartmentMembershipHistory[] @relation("MembershipChangedBy")
+  createdBusinessModels      BusinessModel[]               @relation("BusinessModelCreatedBy")
+  updatedBusinessModels      BusinessModel[]               @relation("BusinessModelUpdatedBy")
+  businessModelEvents        BusinessModelEvent[]          @relation("BusinessModelEventActor")
 
   @@index([role])
   @@index([isActive])
   @@index([departmentId])
   @@map("user")
+}
+
+model BusinessModel {
+  id                 String               @id @default(uuid()) @db.Uuid
+  title              String               @db.VarChar(200)
+  category           String               @db.VarChar(100)
+  targetPlatform     String               @db.VarChar(100)
+  opportunity        String               @db.Text
+  businessLogic      String               @db.Text
+  executionPlan      String               @db.Text
+  costAssumptions    String               @default("") @db.Text
+  revenueAssumptions String               @default("") @db.Text
+  risks              String               @default("") @db.Text
+  tags               String[]             @default([])
+  keywords           String[]             @default([])
+  status             BusinessModelStatus  @default(ACTIVE)
+  revision           Int                  @default(1)
+  archivedAt         DateTime?            @db.Timestamptz(3)
+  deletedAt          DateTime?            @db.Timestamptz(3)
+  createdById        String
+  createdBy          User                 @relation("BusinessModelCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
+  updatedById        String
+  updatedBy          User                 @relation("BusinessModelUpdatedBy", fields: [updatedById], references: [id], onDelete: Restrict)
+  createdAt          DateTime             @default(now()) @db.Timestamptz(3)
+  updatedAt          DateTime             @updatedAt @db.Timestamptz(3)
+  events             BusinessModelEvent[]
+
+  @@index([status, updatedAt])
+  @@index([category])
+  @@index([targetPlatform])
+  @@index([tags], type: Gin)
+  @@index([keywords], type: Gin)
+  @@index([createdById])
+  @@map("business_models")
+}
+
+model BusinessModelEvent {
+  id              String                 @id @default(uuid()) @db.Uuid
+  businessModelId String                 @db.Uuid
+  businessModel   BusinessModel          @relation(fields: [businessModelId], references: [id], onDelete: Restrict)
+  actorId         String
+  actor           User                   @relation("BusinessModelEventActor", fields: [actorId], references: [id], onDelete: Restrict)
+  type            BusinessModelEventType
+  revision        Int
+  snapshot        Json
+  createdAt       DateTime               @default(now()) @db.Timestamptz(3)
+
+  @@unique([businessModelId, revision])
+  @@index([actorId])
+  @@index([type, createdAt])
+  @@map("business_model_events")
 }
 
 model DepartmentMembershipHistory {
