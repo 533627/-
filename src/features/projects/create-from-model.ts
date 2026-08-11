@@ -80,11 +80,13 @@ export async function createProjectFromApprovedRequest(
         { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
       );
     } catch (error) {
-      const shouldRetry =
+      if (
         error instanceof Prisma.PrismaClientKnownRequestError &&
-        error.code === "P2034" &&
-        attempt < MAX_TRANSACTION_ATTEMPTS;
-      if (shouldRetry) continue;
+        error.code === "P2034"
+      ) {
+        if (attempt < MAX_TRANSACTION_ATTEMPTS) continue;
+        throw new ProjectConversionError("PROJECT_CONVERSION_CONFLICT");
+      }
 
       if (
         error instanceof Prisma.PrismaClientKnownRequestError &&
