@@ -40,12 +40,14 @@ model User {
   username        String?     @unique
   displayUsername String?
   role            UserRole    @default(EMPLOYEE)
+  isActive        Boolean     @default(true)
   departmentId    String?     @db.Uuid
   department      Department? @relation(fields: [departmentId], references: [id], onDelete: Restrict)
   sessions        Session[]
   accounts        Account[]
 
   @@index([role])
+  @@index([isActive])
   @@index([departmentId])
   @@map("user")
 }

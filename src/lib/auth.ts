@@ -1,5 +1,6 @@
 import { prismaAdapter } from "@better-auth/prisma-adapter";
 import { betterAuth } from "better-auth";
+import { APIError } from "better-auth/api";
 import { username } from "better-auth/plugins";
 
 import {
@@ -19,6 +20,26 @@ export const auth = betterAuth({
   database: prismaAdapter(getDatabase(), {
     provider: "postgresql",
   }),
+  databaseHooks: {
+    session: {
+      create: {
+        before: async (session) => {
+          const user = await getDatabase().user.findUnique({
+            where: { id: session.userId },
+            select: { isActive: true },
+          });
+
+          if (!user?.isActive) {
+            throw new APIError("UNAUTHORIZED", {
+              message: "Invalid username or password.",
+            });
+          }
+
+          return { data: session };
+        },
+      },
+    },
+  },
   emailAndPassword: {
     enabled: true,
     disableSignUp: true,

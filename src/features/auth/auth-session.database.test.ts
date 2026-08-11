@@ -11,6 +11,7 @@ const describeWithDatabase = testDatabaseUrl ? describe : describe.skip;
 
 describeWithDatabase("username authentication database integration", () => {
   const username = `auth_test_${randomUUID().replaceAll("-", "").slice(0, 12)}`;
+  const inactiveUsername = `${username}_off`;
   const password = "StrongPassword123!";
   const database = new PrismaClient({
     adapter: new PrismaPg({ connectionString: testDatabaseUrl! }),
@@ -43,10 +44,33 @@ describeWithDatabase("username authentication database integration", () => {
         },
       },
     });
+
+    const inactiveUserId = randomUUID();
+    await database.user.create({
+      data: {
+        id: inactiveUserId,
+        name: "停用认证测试账号",
+        email: `${inactiveUsername}@internal.invalid`,
+        emailVerified: true,
+        username: inactiveUsername,
+        displayUsername: inactiveUsername,
+        isActive: false,
+        accounts: {
+          create: {
+            id: randomUUID(),
+            accountId: inactiveUserId,
+            providerId: "credential",
+            password: await hashPassword(password),
+          },
+        },
+      },
+    });
   });
 
   afterAll(async () => {
-    await database.user.deleteMany({ where: { username } });
+    await database.user.deleteMany({
+      where: { username: { in: [username, inactiveUsername] } },
+    });
     await database.rateLimit.deleteMany();
     await database.$disconnect();
   });
@@ -118,6 +142,23 @@ describeWithDatabase("username authentication database integration", () => {
 
     expect(session.user).toMatchObject({ username });
     expect(session.session).toBeTruthy();
+  });
+
+  it("prevents a deactivated account from creating a new session", async () => {
+    const signInResponse = await auth.handler(
+      authRequest(
+        "/sign-in/username",
+        { username: inactiveUsername, password },
+        "203.0.113.24",
+      ),
+    );
+
+    expect(signInResponse.status).not.toBe(200);
+    await expect(
+      database.session.count({
+        where: { user: { username: inactiveUsername } },
+      }),
+    ).resolves.toBe(0);
   });
 
   it("prevents employees from changing administrator-managed account identity", async () => {

@@ -26,6 +26,7 @@ describe("loadCurrentUser", () => {
             username: "ops.lead",
             displayUsername: "ops.lead",
             role: "OPERATIONS_ADMIN",
+            isActive: true,
             department: { id: "dept-1", name: "运营部" },
           }),
         },
@@ -46,6 +47,26 @@ describe("loadCurrentUser", () => {
         {
           getSession: async () => ({ user: { id: "missing-user" } }),
           findUser: async () => null,
+        },
+        new Headers(),
+      ),
+    ).resolves.toBeNull();
+  });
+
+  it("rejects a session belonging to a deactivated account", async () => {
+    await expect(
+      loadCurrentUser(
+        {
+          getSession: async () => ({ user: { id: "disabled-user" } }),
+          findUser: async () => ({
+            id: "disabled-user",
+            name: "停用员工",
+            username: "disabled.user",
+            displayUsername: "disabled.user",
+            role: "EMPLOYEE",
+            isActive: false,
+            department: { id: "dept-1", name: "运营部" },
+          }),
         },
         new Headers(),
       ),

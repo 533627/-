@@ -6,6 +6,7 @@ type ShellUserRecord = {
   username: string | null;
   displayUsername: string | null;
   role: Role;
+  isActive: boolean;
   department: { id: string; name: string } | null;
 };
 
@@ -36,7 +37,7 @@ export async function loadCurrentUser(
 
   const user = await dependencies.findUser(session.user.id);
 
-  if (!user) {
+  if (!user || !user.isActive) {
     return null;
   }
 
