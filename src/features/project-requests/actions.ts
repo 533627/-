@@ -26,7 +26,6 @@ const suggestionTargetSchema = z.object({ businessModelId: z.uuid() });
 const requestTargetSchema = z.object({ businessModelId: z.uuid(), suggestionId: z.uuid() });
 const reviewTargetSchema = z.object({
   requestId: z.uuid(),
-  businessModelId: z.uuid(),
   version: z.coerce.number().int().positive(),
   decision: z.enum(PROJECT_REQUEST_DECISIONS),
 });
@@ -83,7 +82,6 @@ export async function reviewProjectRequestAction(
   const actor = await currentActor();
   const target = reviewTargetSchema.safeParse({
     requestId: formData.get("requestId"),
-    businessModelId: formData.get("businessModelId"),
     version: formData.get("version"),
     decision: formData.get("decision"),
   });
@@ -96,7 +94,7 @@ export async function reviewProjectRequestAction(
       target.data.decision,
       String(formData.get("rejectionReason") ?? ""),
     );
-    revalidateBusinessModel(target.data.businessModelId);
+    revalidateBusinessModel(reviewed.businessModelId);
     revalidatePath("/project-requests");
     return {
       status: "success",

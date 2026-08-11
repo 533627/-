@@ -167,6 +167,7 @@ export function createPrismaProjectRequestStore(database: PrismaClient) {
         database.executionSuggestion.findMany({
           where: { businessModelId },
           orderBy: { createdAt: "desc" },
+          take: 100,
           include: {
             author: { select: { id: true, name: true } },
             projectRequest: {
@@ -182,6 +183,7 @@ export function createPrismaProjectRequestStore(database: PrismaClient) {
               : { requestedById: actor.id }),
           },
           orderBy: { createdAt: "desc" },
+          take: 100,
           include: {
             requestedBy: { select: { id: true, name: true } },
             reviewedBy: { select: { id: true, name: true } },
@@ -198,6 +200,7 @@ export function createPrismaProjectRequestStore(database: PrismaClient) {
       return database.projectRequest.findMany({
         where: status ? { status } : undefined,
         orderBy: [{ status: "asc" }, { createdAt: "desc" }],
+        take: 100,
         include: {
           businessModel: { select: { id: true, title: true, category: true } },
           suggestion: { select: { content: true } },

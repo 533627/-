@@ -12,18 +12,15 @@ const initialState: ProjectRequestActionState = { status: "idle" };
 
 export function ProjectRequestReviewForm({
   requestId,
-  businessModelId,
   version,
 }: {
   requestId: string;
-  businessModelId: string;
   version: number;
 }) {
   const [state, action] = useActionState(reviewProjectRequestAction, initialState);
   return (
     <form action={action} className="mt-4 space-y-3">
       <input name="requestId" type="hidden" value={requestId} />
-      <input name="businessModelId" type="hidden" value={businessModelId} />
       <input name="version" type="hidden" value={version} />
       <label className="fieldset" htmlFor={`rejection-${requestId}`}>
         <span className="fieldset-legend">拒绝原因</span>
