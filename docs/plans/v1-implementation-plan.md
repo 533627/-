@@ -129,15 +129,15 @@ All functional slices
 
 ### Phase B — Authentication, departments, and accounts
 
-#### Task B1：Define and test the permission matrix
+#### Task B1：Define and test the permission matrix（已完成）
 
 **Description:** 先建立四类角色、能力枚举、部门作用域规则和负向权限测试，不连接界面。
 
 **Acceptance:**
 
-- [ ] 每项能力对四类角色都有明确结果。
-- [ ] 部门组长不能跨部门管理或派发。
-- [ ] 运营组长不能创建、重置或停用最高管理员。
+- [x] 每项能力对四类角色都有明确结果。
+- [x] 部门组长不能跨部门管理或派发。
+- [x] 运营组长不能创建、重置或停用最高管理员。
 
 **Verify:** `pnpm test -- permissions`
 
