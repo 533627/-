@@ -193,18 +193,18 @@ All functional slices
 **Likely files:** `src/app/(auth)/login/page.tsx`, `src/app/(protected)/layout.tsx`, `src/components/app-shell.tsx`, `src/features/auth/login-form.tsx`, `e2e/login.spec.ts`  
 **Scope:** M
 
-#### Task B5：Build the password/account terminal
+#### Task B5：Build the password/account terminal（已完成）
 
 **Description:** 纵向实现员工账号列表、创建、部门角色绑定、停用/启用和密码重置；新密码仅在当次成功结果显示。
 
 **Acceptance:**
 
-- [ ] 最高管理员和运营组长可操作允许范围内的账号。
-- [ ] 其他角色访问页面或接口均被拒绝。
-- [ ] 页面刷新或离开后不能再次取得原密码。
-- [ ] 停用账号的全部旧会话立即失效。
+- [x] 最高管理员和运营组长可操作允许范围内的账号。
+- [x] 其他角色访问页面或接口均被拒绝。
+- [x] 页面刷新或离开后不能再次取得原密码。
+- [x] 停用账号的全部旧会话立即失效。
 
-**Verify:** `pnpm test -- account-management && pnpm test:e2e --grep "账号终端"`
+**Verify:** `pnpm test -- --run && pnpm test:e2e --grep "账号终端" && pnpm build`
 
 **Dependencies:** B4  
 **Likely files:** `src/features/accounts/actions.ts`, `src/features/accounts/account-form.tsx`, `src/app/(protected)/accounts/page.tsx`, `src/features/accounts/accounts.test.ts`, `e2e/accounts.spec.ts`  
