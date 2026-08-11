@@ -1,6 +1,6 @@
 import { PrismaPg } from "@prisma/adapter-pg";
 import { verifyPassword } from "better-auth/crypto";
-import { afterAll, beforeEach, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 
 import { PrismaClient } from "@/generated/prisma/client";
 import { bootstrapSuperAdmin } from "@/features/accounts/bootstrap-admin";
@@ -14,6 +14,15 @@ describeWithDatabase("super-admin bootstrap database integration", () => {
     adapter: new PrismaPg({ connectionString: testDatabaseUrl! }),
   });
   const store = createPrismaBootstrapAdminStore(database);
+  let auth: (typeof import("@/lib/auth"))["auth"];
+
+  beforeAll(async () => {
+    process.env.DATABASE_URL = testDatabaseUrl;
+    process.env.BETTER_AUTH_URL = "http://localhost:3000";
+    process.env.BETTER_AUTH_SECRET =
+      "bootstrap-integration-secret-with-at-least-32-characters";
+    ({ auth } = await import("@/lib/auth"));
+  });
 
   beforeEach(async () => {
     await database.user.deleteMany({
@@ -54,6 +63,19 @@ describeWithDatabase("super-admin bootstrap database integration", () => {
         password: credentials.password,
       }),
     ).resolves.toBe(true);
+
+    const signInResponse = await auth.handler(
+      new Request("http://localhost:3000/api/auth/sign-in/username", {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          origin: "http://localhost:3000",
+          "x-forwarded-for": "203.0.113.40",
+        },
+        body: JSON.stringify(credentials),
+      }),
+    );
+    expect(signInResponse.status).toBe(200);
   });
 
   it("rejects a second initialization and preserves the original administrator", async () => {
