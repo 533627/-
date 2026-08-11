@@ -161,15 +161,15 @@ All functional slices
 **Likely files:** `src/lib/auth.ts`, `src/lib/auth-client.ts`, `src/app/api/auth/[...all]/route.ts`, `src/features/auth/auth.test.ts`, `src/proxy.ts`  
 **Scope:** M
 
-#### Task B3：Create the bootstrap super-admin flow
+#### Task B3：Create the bootstrap super-admin flow（已完成）
 
 **Description:** 添加一次性运维脚本创建首个最高管理员，密码只输出到运行脚本的终端一次。
 
 **Acceptance:**
 
-- [ ] 没有最高管理员时可安全初始化一个账号。
-- [ ] 已存在最高管理员时脚本拒绝重复创建。
-- [ ] 数据库和日志中没有明文密码。
+- [x] 没有最高管理员时可安全初始化一个账号。
+- [x] 已存在最高管理员时脚本拒绝重复创建。
+- [x] 数据库和日志中没有明文密码。
 
 **Verify:** `pnpm test -- bootstrap-admin` and manual dry run against test DB
 
