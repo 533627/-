@@ -145,15 +145,15 @@ All functional slices
 **Likely files:** `src/lib/authz/permissions.ts`, `src/lib/authz/permissions.test.ts`, `src/lib/authz/types.ts`  
 **Scope:** S
 
-#### Task B2：Integrate username authentication and sessions
+#### Task B2：Integrate username authentication and sessions（已完成）
 
 **Description:** 配置 Better Auth 用户名登录、会话 Cookie、登录限流和统一错误响应，关闭公开注册入口。
 
 **Acceptance:**
 
-- [ ] 有效账号可登录并建立 HttpOnly 会话。
-- [ ] 无效用户名与错误密码返回相同错误。
-- [ ] 未登录用户不能访问受保护页面和服务端操作。
+- [x] 有效账号可登录并建立 HttpOnly 会话。
+- [x] 无效用户名与错误密码返回相同错误。
+- [x] 未登录用户不能访问受保护页面和服务端操作。
 
 **Verify:** `pnpm test -- auth-session && pnpm build`
 

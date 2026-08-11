@@ -6,6 +6,8 @@ export const AUTH_DISABLED_PATHS = [
   "/is-username-available",
   "/request-password-reset",
   "/reset-password",
+  "/update-user",
+  "/change-email",
 ] as const;
 
 export const AUTH_RATE_LIMIT = {

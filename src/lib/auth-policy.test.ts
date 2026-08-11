@@ -16,6 +16,8 @@ describe("authentication policy", () => {
         "/is-username-available",
         "/request-password-reset",
         "/reset-password",
+        "/update-user",
+        "/change-email",
       ]),
     );
   });

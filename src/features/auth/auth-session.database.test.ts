@@ -120,6 +120,41 @@ describeWithDatabase("username authentication database integration", () => {
     expect(session.session).toBeTruthy();
   });
 
+  it("prevents employees from changing administrator-managed account identity", async () => {
+    const signInResponse = await auth.handler(
+      authRequest(
+        "/sign-in/username",
+        { username, password },
+        "203.0.113.21",
+      ),
+    );
+    const cookie = signInResponse.headers.get("set-cookie")?.split(";", 1)[0];
+
+    const updateUserResponse = await auth.handler(
+      authRequest(
+        "/update-user",
+        { username: `${username}_changed` },
+        "203.0.113.22",
+        cookie,
+      ),
+    );
+    const changeEmailResponse = await auth.handler(
+      authRequest(
+        "/change-email",
+        { newEmail: `${username}_changed@internal.invalid` },
+        "203.0.113.23",
+        cookie,
+      ),
+    );
+
+    expect(updateUserResponse.status).not.toBe(200);
+    expect(changeEmailResponse.status).not.toBe(200);
+    expect(await database.user.findUnique({ where: { username } })).toMatchObject({
+      username,
+      email: `${username}@internal.invalid`,
+    });
+  });
+
   it("rejects a protected server operation without a session", async () => {
     const { getRequiredSession } = await import("@/lib/auth-session-server");
 
@@ -153,6 +188,7 @@ function authRequest(
   path: string,
   body: Record<string, string>,
   ipAddress = "203.0.113.1",
+  cookie?: string,
 ) {
   return new Request(`http://localhost:3000/api/auth${path}`, {
     method: "POST",
@@ -160,6 +196,7 @@ function authRequest(
       "content-type": "application/json",
       origin: "http://localhost:3000",
       "x-forwarded-for": ipAddress,
+      ...(cookie ? { cookie } : {}),
     },
     body: JSON.stringify(body),
   });
