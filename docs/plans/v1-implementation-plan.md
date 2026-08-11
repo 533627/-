@@ -240,9 +240,9 @@ All functional slices
 
 **Acceptance:**
 
-- [ ] 只有最高管理员能变更原始内容。
-- [ ] 运营组长可查看但不能通过构造请求修改原文。
-- [ ] 标签、类目和关键字可筛选。
+- [x] 只有最高管理员能变更原始内容。
+- [x] 运营组长可查看但不能通过构造请求修改原文。
+- [x] 标签、类目和关键字可筛选。
 
 **Verify:** `pnpm test -- business-models && pnpm test:e2e --grep "商业整理"`
 
