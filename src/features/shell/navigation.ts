@@ -57,7 +57,7 @@ const WORKSPACE_NAVIGATION = [
     href: "/departments",
     label: "部门管理",
     description: "维护部门结构和人员归属",
-    capability: "DEPARTMENT_STRUCTURE_MANAGE",
+    capability: "DEPARTMENT_MEMBERS_VIEW",
   },
   {
     slug: "audit",

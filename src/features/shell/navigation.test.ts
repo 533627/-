@@ -20,14 +20,14 @@ describe("role-aware workspace navigation", () => {
     ]);
   });
 
-  it("lets the operations administrator manage accounts without super-admin structure access", () => {
+  it("lets the operations administrator manage accounts and cross-department membership", () => {
     const hrefs = getNavigationForRole("OPERATIONS_ADMIN").map(
       ({ href }) => href,
     );
 
     expect(hrefs).toContain("/accounts");
     expect(hrefs).toContain("/business-models");
-    expect(hrefs).not.toContain("/departments");
+    expect(hrefs).toContain("/departments");
     expect(hrefs).not.toContain("/audit");
   });
 
