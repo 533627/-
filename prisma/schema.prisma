@@ -47,6 +47,19 @@ enum NotificationType {
   PROJECT_REQUEST_REJECTED
 }
 
+enum ProjectStatus {
+  PREPARING
+  IN_PROGRESS
+  PAUSED
+  COMPLETED
+  ARCHIVED
+}
+
+enum ProjectMemberRole {
+  LEAD
+  MEMBER
+}
+
 model Department {
   id                     String                        @id @default(uuid()) @db.Uuid
   code                   String                        @unique @db.VarChar(50)
@@ -57,37 +70,44 @@ model Department {
   members                User[]
   membershipOrigins      DepartmentMembershipHistory[] @relation("MembershipFromDepartment")
   membershipDestinations DepartmentMembershipHistory[] @relation("MembershipToDepartment")
+  projectDepartments     ProjectDepartment[]
 
   @@index([isActive])
   @@map("departments")
 }
 
 model User {
-  id                         String                        @id
-  name                       String
-  email                      String                        @unique
-  emailVerified              Boolean                       @default(false)
-  image                      String?
-  createdAt                  DateTime                      @default(now())
-  updatedAt                  DateTime                      @updatedAt
-  username                   String?                       @unique
-  displayUsername            String?
-  role                       UserRole                      @default(EMPLOYEE)
-  isActive                   Boolean                       @default(true)
-  departmentId               String?                       @db.Uuid
-  department                 Department?                   @relation(fields: [departmentId], references: [id], onDelete: Restrict)
-  sessions                   Session[]
-  accounts                   Account[]
-  membershipChanges          DepartmentMembershipHistory[] @relation("MembershipChangedMember")
-  performedMembershipChanges DepartmentMembershipHistory[] @relation("MembershipChangedBy")
-  createdBusinessModels      BusinessModel[]               @relation("BusinessModelCreatedBy")
-  updatedBusinessModels      BusinessModel[]               @relation("BusinessModelUpdatedBy")
-  businessModelEvents        BusinessModelEvent[]          @relation("BusinessModelEventActor")
-  executionSuggestions       ExecutionSuggestion[]         @relation("ExecutionSuggestionAuthor")
-  projectRequests            ProjectRequest[]              @relation("ProjectRequestApplicant")
-  reviewedProjectRequests    ProjectRequest[]              @relation("ProjectRequestReviewer")
-  projectRequestEvents       ProjectRequestEvent[]         @relation("ProjectRequestEventActor")
-  notifications              Notification[]
+  id                          String                        @id
+  name                        String
+  email                       String                        @unique
+  emailVerified               Boolean                       @default(false)
+  image                       String?
+  createdAt                   DateTime                      @default(now())
+  updatedAt                   DateTime                      @updatedAt
+  username                    String?                       @unique
+  displayUsername             String?
+  role                        UserRole                      @default(EMPLOYEE)
+  isActive                    Boolean                       @default(true)
+  departmentId                String?                       @db.Uuid
+  department                  Department?                   @relation(fields: [departmentId], references: [id], onDelete: Restrict)
+  sessions                    Session[]
+  accounts                    Account[]
+  membershipChanges           DepartmentMembershipHistory[] @relation("MembershipChangedMember")
+  performedMembershipChanges  DepartmentMembershipHistory[] @relation("MembershipChangedBy")
+  createdBusinessModels       BusinessModel[]               @relation("BusinessModelCreatedBy")
+  updatedBusinessModels       BusinessModel[]               @relation("BusinessModelUpdatedBy")
+  businessModelEvents         BusinessModelEvent[]          @relation("BusinessModelEventActor")
+  executionSuggestions        ExecutionSuggestion[]         @relation("ExecutionSuggestionAuthor")
+  projectRequests             ProjectRequest[]              @relation("ProjectRequestApplicant")
+  reviewedProjectRequests     ProjectRequest[]              @relation("ProjectRequestReviewer")
+  projectRequestEvents        ProjectRequestEvent[]         @relation("ProjectRequestEventActor")
+  notifications               Notification[]
+  ledProjects                 Project[]                     @relation("ProjectLead")
+  createdProjects             Project[]                     @relation("ProjectCreatedBy")
+  projectMemberships          ProjectMember[]               @relation("ProjectMemberUser")
+  addedProjectMembers         ProjectMember[]               @relation("ProjectMemberAddedBy")
+  addedProjectDepartments     ProjectDepartment[]           @relation("ProjectDepartmentAddedBy")
+  createdProjectConversations ProjectConversation[]         @relation("ProjectConversationCreatedBy")
 
   @@index([role])
   @@index([isActive])
@@ -121,6 +141,7 @@ model BusinessModel {
   events               BusinessModelEvent[]
   executionSuggestions ExecutionSuggestion[]
   projectRequests      ProjectRequest[]
+  projects             Project[]
 
   @@index([status, updatedAt])
   @@index([category])
@@ -165,11 +186,87 @@ model ProjectRequest {
   createdAt       DateTime              @default(now()) @db.Timestamptz(3)
   updatedAt       DateTime              @updatedAt @db.Timestamptz(3)
   events          ProjectRequestEvent[]
+  project         Project?
 
   @@index([businessModelId, status, createdAt])
   @@index([requestedById, status, createdAt])
   @@index([reviewedById])
   @@map("project_requests")
+}
+
+model Project {
+  id                    String               @id @default(uuid()) @db.Uuid
+  name                  String               @db.VarChar(200)
+  objective             String               @db.Text
+  status                ProjectStatus        @default(PREPARING)
+  sourceBusinessModelId String               @db.Uuid
+  sourceBusinessModel   BusinessModel        @relation(fields: [sourceBusinessModelId], references: [id], onDelete: Restrict)
+  sourceRequestId       String               @unique @db.Uuid
+  sourceRequest         ProjectRequest       @relation(fields: [sourceRequestId], references: [id], onDelete: Restrict)
+  leadId                String
+  lead                  User                 @relation("ProjectLead", fields: [leadId], references: [id], onDelete: Restrict)
+  createdById           String
+  createdBy             User                 @relation("ProjectCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
+  startAt               DateTime             @default(now()) @db.Timestamptz(3)
+  targetEndAt           DateTime?            @db.Timestamptz(3)
+  createdAt             DateTime             @default(now()) @db.Timestamptz(3)
+  updatedAt             DateTime             @updatedAt @db.Timestamptz(3)
+  members               ProjectMember[]
+  departments           ProjectDepartment[]
+  conversation          ProjectConversation?
+
+  @@index([status, updatedAt])
+  @@index([sourceBusinessModelId])
+  @@index([leadId])
+  @@index([createdById])
+  @@map("projects")
+}
+
+model ProjectMember {
+  id        String            @id @default(uuid()) @db.Uuid
+  projectId String            @db.Uuid
+  project   Project           @relation(fields: [projectId], references: [id], onDelete: Restrict)
+  userId    String
+  user      User              @relation("ProjectMemberUser", fields: [userId], references: [id], onDelete: Restrict)
+  role      ProjectMemberRole @default(MEMBER)
+  addedById String
+  addedBy   User              @relation("ProjectMemberAddedBy", fields: [addedById], references: [id], onDelete: Restrict)
+  joinedAt  DateTime          @default(now()) @db.Timestamptz(3)
+  removedAt DateTime?         @db.Timestamptz(3)
+
+  @@unique([projectId, userId])
+  @@index([userId, removedAt])
+  @@index([addedById])
+  @@map("project_members")
+}
+
+model ProjectDepartment {
+  id           String     @id @default(uuid()) @db.Uuid
+  projectId    String     @db.Uuid
+  project      Project    @relation(fields: [projectId], references: [id], onDelete: Restrict)
+  departmentId String     @db.Uuid
+  department   Department @relation(fields: [departmentId], references: [id], onDelete: Restrict)
+  addedById    String
+  addedBy      User       @relation("ProjectDepartmentAddedBy", fields: [addedById], references: [id], onDelete: Restrict)
+  addedAt      DateTime   @default(now()) @db.Timestamptz(3)
+  removedAt    DateTime?  @db.Timestamptz(3)
+
+  @@unique([projectId, departmentId])
+  @@index([departmentId, removedAt])
+  @@index([addedById])
+  @@map("project_departments")
+}
+
+model ProjectConversation {
+  id          String   @id @default(uuid()) @db.Uuid
+  projectId   String   @unique @db.Uuid
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Restrict)
+  createdById String
+  createdBy   User     @relation("ProjectConversationCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
+  createdAt   DateTime @default(now()) @db.Timestamptz(3)
+
+  @@index([createdById])
+  @@map("project_conversations")
 }
 
 model ProjectRequestEvent {
