@@ -55,20 +55,20 @@ export function createPrismaProjectStore(database: PrismaClient) {
     },
 
     async getProject(actor: Actor, projectId: string) {
-      const membership = actor.role === "SUPER_ADMIN"
-        ? true
-        : Boolean(await database.projectMember.findFirst({
-            where: { projectId, userId: actor.id, removedAt: null },
-            select: { id: true },
-          }));
-      if (!canAccessProject(actor.role, membership)) {
-        throw new ProjectManagementError("PROJECT_VIEW_FORBIDDEN");
-      }
-      const project = await database.project.findUnique({
-        where: { id: projectId },
+      const project = await database.project.findFirst({
+        where: {
+          id: projectId,
+          ...(actor.role === "SUPER_ADMIN"
+            ? {}
+            : { members: { some: { userId: actor.id, removedAt: null } } }),
+        },
         include: projectDetails,
       });
-      if (!project) throw new ProjectManagementError("PROJECT_NOT_FOUND");
+      if (!project) {
+        throw new ProjectManagementError(
+          canAccessProject(actor.role, false) ? "PROJECT_NOT_FOUND" : "PROJECT_VIEW_FORBIDDEN",
+        );
+      }
       return project;
     },
 
