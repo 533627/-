@@ -235,14 +235,30 @@ export function createPrismaBusinessModelStore(database: PrismaClient) {
 
     async facets(actor: Actor) {
       assertCanView(actor);
-      const records = await database.businessModel.findMany({
-        where: { status: { not: "DELETED" } },
-        select: { category: true, tags: true, keywords: true },
-      });
+      const [categories, tags, keywords] = await database.$transaction([
+        database.$queryRaw<Array<{ value: string }>>`
+          SELECT DISTINCT "category" AS value
+          FROM "business_models"
+          WHERE "status" <> 'DELETED'
+          ORDER BY value
+        `,
+        database.$queryRaw<Array<{ value: string }>>`
+          SELECT DISTINCT unnest("tags") AS value
+          FROM "business_models"
+          WHERE "status" <> 'DELETED'
+          ORDER BY value
+        `,
+        database.$queryRaw<Array<{ value: string }>>`
+          SELECT DISTINCT unnest("keywords") AS value
+          FROM "business_models"
+          WHERE "status" <> 'DELETED'
+          ORDER BY value
+        `,
+      ]);
       return {
-        categories: [...new Set(records.map(({ category }) => category))].sort(),
-        tags: [...new Set(records.flatMap(({ tags }) => tags))].sort(),
-        keywords: [...new Set(records.flatMap(({ keywords }) => keywords))].sort(),
+        categories: categories.map(({ value }) => value),
+        tags: tags.map(({ value }) => value),
+        keywords: keywords.map(({ value }) => value),
       };
     },
   };
