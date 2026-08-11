@@ -206,6 +206,7 @@ export function createPrismaProjectRequestStore(database: PrismaClient) {
           suggestion: { select: { content: true } },
           requestedBy: { select: { id: true, name: true } },
           reviewedBy: { select: { id: true, name: true } },
+          project: { select: { id: true, name: true, status: true } },
         },
       });
     },

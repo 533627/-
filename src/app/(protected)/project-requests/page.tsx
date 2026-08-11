@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { requireCurrentUser } from "@/features/auth/current-user-server";
+import { ProjectConversionAction } from "@/features/projects/project-conversion-action";
 import { ProjectRequestReviewForm } from "@/features/project-requests/project-request-review-form";
 import { createPrismaProjectRequestStore } from "@/features/project-requests/project-request-store";
 import { hasCapability } from "@/lib/authz/permissions";
@@ -35,8 +36,10 @@ export default async function ProjectRequestsPage({
       <div className="mt-2 border-l-2 border-base-300 pl-4"><p className="text-xs font-medium text-base-content/55">运营建议</p><p className="mt-1 whitespace-pre-wrap leading-6">{request.suggestion.content}</p></div>
       <div><p className="text-xs font-medium text-base-content/55">验证目标</p><p className="mt-1 whitespace-pre-wrap leading-6 text-base-content/75">{request.objective}</p></div>
       {request.rejectionReason ? <div className="alert alert-error alert-soft" role="status"><span>拒绝原因：{request.rejectionReason}</span></div> : null}
+      {request.project ? <div className="alert alert-success alert-soft" role="status"><span>已生成正式项目：{request.project.name}</span></div> : null}
       <p className="text-xs text-base-content/55">{request.requestedBy.name} 提交 · {formatDate(request.createdAt)}{request.reviewedBy ? ` · ${request.reviewedBy.name} 已审批` : ""}</p>
       {request.status === "PENDING" ? <ProjectRequestReviewForm requestId={request.id} version={request.version} /> : null}
+      {request.status === "APPROVED" && !request.project ? <ProjectConversionAction requestId={request.id} /> : null}
     </div></li>)}</ul> : <div className="card card-border bg-base-100"><div className="card-body items-center py-12 text-center" role="status"><h2 className="font-semibold">当前没有匹配的立项申请</h2><p className="text-sm text-base-content/60">运营组长提交申请后会出现在这里。</p></div></div>}
   </div>;
 }

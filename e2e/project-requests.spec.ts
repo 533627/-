@@ -44,6 +44,10 @@ test.describe("执行建议与立项申请", () => {
 
   test.beforeEach(async () => { await database.rateLimit.deleteMany(); });
   test.afterAll(async () => {
+    await database.projectConversation.deleteMany({ where: { project: { sourceBusinessModelId: businessModelId } } });
+    await database.projectDepartment.deleteMany({ where: { project: { sourceBusinessModelId: businessModelId } } });
+    await database.projectMember.deleteMany({ where: { project: { sourceBusinessModelId: businessModelId } } });
+    await database.project.deleteMany({ where: { sourceBusinessModelId: businessModelId } });
     await database.notification.deleteMany({ where: { recipientId: operationsId } });
     await database.projectRequestEvent.deleteMany({ where: { request: { businessModelId } } });
     await database.projectRequest.deleteMany({ where: { businessModelId } });
@@ -91,7 +95,7 @@ test.describe("执行建议与立项申请", () => {
       .resolves.toMatchObject({ recipientId: operationsId, type: "PROJECT_REQUEST_REJECTED", message: "预算依据不足", isRead: false });
   });
 
-  test("运营可再次申请，最高管理员可批准", async ({ page }) => {
+  test("运营可再次申请，最高管理员可批准并生成完整项目空间", async ({ page }) => {
     await signIn(page, operationsUsername);
     await page.goto(`/business-models/${businessModelId}`);
     await page.getByLabel("建议内容").fill("先做小规模供应链核价。");
@@ -111,6 +115,18 @@ test.describe("执行建议与立项申请", () => {
     await expect(page.getByRole("heading", { name: approvedProjectName })).toHaveCount(0);
     await expect(database.projectRequest.findFirstOrThrow({ where: { proposedName: approvedProjectName } }))
       .resolves.toMatchObject({ status: "APPROVED", reviewedById: ownerId, version: 2 });
+
+    await page.goto("/project-requests?status=APPROVED");
+    const approvedCard = page.getByRole("heading", { name: approvedProjectName }).locator("..").locator("..");
+    await approvedCard.getByRole("button", { name: "生成正式项目" }).click();
+    await expect(approvedCard.getByText("已生成正式项目：", { exact: false })).toBeVisible();
+
+    const request = await database.projectRequest.findFirstOrThrow({ where: { proposedName: approvedProjectName } });
+    const project = await database.project.findUniqueOrThrow({ where: { sourceRequestId: request.id } });
+    expect(project).toMatchObject({ sourceBusinessModelId: businessModelId, leadId: operationsId, createdById: ownerId });
+    await expect(database.projectMember.count({ where: { projectId: project.id } })).resolves.toBe(2);
+    await expect(database.projectDepartment.count({ where: { projectId: project.id } })).resolves.toBe(1);
+    await expect(database.projectConversation.count({ where: { projectId: project.id } })).resolves.toBe(1);
   });
 
   async function createUser(id: string, username: string, name: string, role: "SUPER_ADMIN" | "OPERATIONS_ADMIN", departmentId: string | null) {
