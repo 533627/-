@@ -24,7 +24,10 @@ export function getDatabase() {
 
   const { DATABASE_URL } = databaseEnvironmentSchema.parse(process.env);
   const database = new PrismaClient({
-    adapter: new PrismaPg({ connectionString: DATABASE_URL }),
+    adapter: new PrismaPg({
+      connectionString: DATABASE_URL,
+      max: process.env.NODE_ENV === "production" ? 10 : 1,
+    }),
   });
 
   if (process.env.NODE_ENV !== "production") {

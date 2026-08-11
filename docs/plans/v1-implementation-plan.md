@@ -305,15 +305,15 @@ All functional slices
 
 ### Phase D — Task assignment and review
 
-#### Task D1：Implement the tested task state machine
+#### Task D1：Implement the tested task state machine（已完成）
 
 **Description:** 先以纯领域逻辑实现允许的状态转换、操作者约束和不可变事件生成。
 
 **Acceptance:**
 
-- [ ] 不允许跳过接收、执行或验收直接完成。
-- [ ] 退回必须有原因，重新提交回到待验收。
-- [ ] 重复操作安全失败且不产生重复事件。
+- [x] 不允许跳过接收、执行或验收直接完成。
+- [x] 退回必须有原因，重新提交回到待验收。
+- [x] 重复操作安全失败且不产生重复事件。
 
 **Verify:** `pnpm test -- task-state-machine`
 
@@ -321,15 +321,15 @@ All functional slices
 **Likely files:** `src/features/tasks/state-machine.ts`, `src/features/tasks/state-machine.test.ts`, `src/features/tasks/types.ts`  
 **Scope:** S
 
-#### Task D2：Create and assign tasks
+#### Task D2：Create and assign tasks（已完成）
 
 **Description:** 实现项目内创建任务和权限范围内派发，包含优先级、负责人、截止时间与说明。
 
 **Acceptance:**
 
-- [ ] 最高管理员和运营组长可跨部门派发。
-- [ ] 部门组长只能派给本部门员工。
-- [ ] 普通员工不能派发任务或伪造派发人。
+- [x] 最高管理员和运营组长可跨部门派发。
+- [x] 部门组长只能派给本部门员工。
+- [x] 普通员工不能派发任务或伪造派发人。
 
 **Verify:** `pnpm test -- task-assignment && pnpm build`
 
@@ -337,15 +337,15 @@ All functional slices
 **Likely files:** `src/features/tasks/actions.ts`, `src/features/tasks/task-form.tsx`, `src/app/(protected)/projects/[id]/tasks/page.tsx`, `src/features/tasks/task-assignment.test.ts`  
 **Scope:** M
 
-#### Task D3：Deliver employee task execution
+#### Task D3：Deliver employee task execution（已完成）
 
 **Description:** 实现“我的待办”、接收、开始、提交说明与成果的员工路径。
 
 **Acceptance:**
 
-- [ ] 员工只能操作分配给自己的任务。
-- [ ] 每次状态变化生成时间和操作者记录。
-- [ ] 逾期状态由截止时间计算，不能由客户端伪造。
+- [x] 员工只能操作分配给自己的任务。
+- [x] 每次状态变化生成时间和操作者记录。
+- [x] 逾期状态由截止时间计算，不能由客户端伪造。
 
 **Verify:** `pnpm test -- task-execution && pnpm test:e2e --grep "提交任务"`
 
@@ -353,15 +353,15 @@ All functional slices
 **Likely files:** `src/features/tasks/my-task-list.tsx`, `src/features/tasks/task-detail.tsx`, `src/app/(protected)/my-tasks/page.tsx`, `src/features/tasks/task-execution.test.ts`, `e2e/task-execution.spec.ts`  
 **Scope:** M
 
-#### Task D4：Deliver review, rejection, and completion metrics
+#### Task D4：Deliver review, rejection, and completion metrics（已完成）
 
 **Description:** 实现派发人/上级的验收与退回，并基于已验收任务计算完成率。
 
 **Acceptance:**
 
-- [ ] 非派发人或更高权限者不能验收。
-- [ ] 退回原因对员工可见，再次提交完整留痕。
-- [ ] 只有 `COMPLETED` 计入完成率。
+- [x] 非派发人或更高权限者不能验收。
+- [x] 退回原因对员工可见，再次提交完整留痕。
+- [x] 只有 `COMPLETED` 计入完成率。
 
 **Verify:** `pnpm test -- task-review && pnpm test:e2e --grep "任务验收"`
 
@@ -371,8 +371,10 @@ All functional slices
 
 #### Checkpoint D
 
-- [ ] 管理者派发、员工执行、提交、退回、再提交、验收的完整 E2E 通过。
-- [ ] 越权与非法状态转换测试全部通过。
+- [x] 管理者派发、员工执行、提交、退回、再提交、验收的完整 E2E 通过。
+- [x] 越权与非法状态转换测试全部通过。
+
+**交付结果：** 项目页可按权限派发任务；任务中心支持接收、开始、提交、退回、再次提交和验收；项目页展示完成率、待验收和逾期指标。全量验证为 135 项单元/数据库测试、22 项真实浏览器 E2E、生产构建、迁移状态和依赖安全审计全部通过。
 
 ### Phase E — Conversations and files
 

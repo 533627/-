@@ -80,7 +80,7 @@ describeWithDatabase.sequential("task assignment and execution", () => {
   it("lets a department manager assign only active project members in their department", async () => {
     const created = await store.createTask(manager, {
       projectId, title: "制作三版商品主图", description: "突出收纳前后对比", priority: "HIGH",
-      assigneeId: employeeId, dueAt: new Date("2026-08-20T10:00:00.000Z"),
+      assigneeId: employeeId, dueAt: futureDate(9),
     });
     taskId = created.id;
     expect(created).toMatchObject({ status: "PENDING_ACCEPTANCE", version: 1, assignedById: managerId });
@@ -88,18 +88,18 @@ describeWithDatabase.sequential("task assignment and execution", () => {
       .resolves.toMatchObject({ type: "ASSIGNED", actorId: managerId });
     await expect(store.createTask(manager, {
       projectId, title: "准备仓库样品", description: "准备三种颜色", priority: "MEDIUM",
-      assigneeId: warehouseEmployeeId, dueAt: new Date("2026-08-20T10:00:00.000Z"),
+      assigneeId: warehouseEmployeeId, dueAt: futureDate(9),
     })).rejects.toEqual(new TaskStoreError("TASK_ASSIGN_FORBIDDEN"));
   });
 
   it("lets the operations administrator assign across departments and blocks employees", async () => {
     await expect(store.createTask(operations, {
       projectId, title: "核对仓库库存", description: "确认三种颜色库存", priority: "URGENT",
-      assigneeId: warehouseEmployeeId, dueAt: new Date("2026-08-21T10:00:00.000Z"),
+      assigneeId: warehouseEmployeeId, dueAt: futureDate(10),
     })).resolves.toMatchObject({ assigneeId: warehouseEmployeeId });
     await expect(store.createTask(employee, {
       projectId, title: "伪造派发", description: "不允许", priority: "LOW",
-      assigneeId: employeeId, dueAt: new Date("2026-08-21T10:00:00.000Z"),
+      assigneeId: employeeId, dueAt: futureDate(10),
     })).rejects.toEqual(new TaskStoreError("TASK_ASSIGN_FORBIDDEN"));
   });
 
@@ -132,5 +132,8 @@ describeWithDatabase.sequential("task assignment and execution", () => {
   }
   function user(id: string, username: string, role: "SUPER_ADMIN" | "OPERATIONS_ADMIN" | "DEPARTMENT_MANAGER" | "EMPLOYEE", departmentId: string | null) {
     return { id, name: username, email: `${username}@internal.invalid`, emailVerified: true, username, displayUsername: username, role, departmentId };
+  }
+  function futureDate(days: number) {
+    return new Date(Date.now() + days * 24 * 60 * 60 * 1000);
   }
 });

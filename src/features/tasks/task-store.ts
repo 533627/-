@@ -151,13 +151,15 @@ export function createPrismaTaskStore(database: PrismaClient) {
 
     async getProjectTaskSummary(actor: Actor, projectId: string) {
       await assertProjectAccess(database, actor, projectId);
-      const grouped = await database.task.groupBy({
-        by: ["status"], where: { projectId }, _count: { _all: true },
+      const projectTasks = await database.task.findMany({
+        where: { projectId },
+        select: { status: true, dueAt: true },
       });
-      const total = grouped.reduce((sum, row) => sum + row._count._all, 0);
-      const completed = grouped.find((row) => row.status === "COMPLETED")?._count._all ?? 0;
-      const pendingReview = grouped.find((row) => row.status === "PENDING_REVIEW")?._count._all ?? 0;
-      const overdue = await database.task.count({ where: { projectId, status: { not: "COMPLETED" }, dueAt: { lt: new Date() } } });
+      const now = new Date();
+      const total = projectTasks.length;
+      const completed = projectTasks.filter((task) => task.status === "COMPLETED").length;
+      const pendingReview = projectTasks.filter((task) => task.status === "PENDING_REVIEW").length;
+      const overdue = projectTasks.filter((task) => isTaskOverdue(task.dueAt, task.status, now)).length;
       return { total, completed, pendingReview, overdue, completionRate: total ? Math.round((completed / total) * 100) : 0 };
     },
   };
