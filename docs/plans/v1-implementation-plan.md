@@ -105,15 +105,15 @@ All functional slices
 **Likely files:** `package.json`, `pnpm-lock.yaml`, `.gitignore`, `src/app/*`, `vitest.config.mts`  
 **Scope:** M
 
-#### Task A2：Add PostgreSQL and Prisma foundation
+#### Task A2：Add PostgreSQL and Prisma foundation（已完成）
 
 **Description:** 配置 Prisma、开发/测试数据库连接、健康检查和迁移命令，仅建立系统基础表和默认部门种子。
 
 **Acceptance:**
 
-- [ ] 四个默认部门可通过种子脚本重复初始化而不产生重复数据。
-- [ ] 健康检查能区分应用正常和数据库不可用。
-- [ ] 初始迁移可在空数据库上完整执行。
+- [x] 四个默认部门可通过种子脚本重复初始化而不产生重复数据。
+- [x] 健康检查能区分应用正常和数据库不可用。
+- [x] 初始迁移可在空数据库上完整执行。
 
 **Verify:** `pnpm prisma migrate dev && pnpm test -- database && pnpm build`
 
@@ -123,9 +123,9 @@ All functional slices
 
 #### Checkpoint A
 
-- [ ] 全部质量命令通过。
-- [ ] 应用与数据库可在本机启动。
-- [ ] Git 历史中没有密钥或构建产物。
+- [x] 全部质量命令通过。
+- [x] 应用与数据库可在本机启动。
+- [x] Git 历史中没有密钥或构建产物。
 
 ### Phase B — Authentication, departments, and accounts
 
