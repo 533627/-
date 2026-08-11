@@ -25,6 +25,34 @@ describeWithDatabase("super-admin bootstrap database integration", () => {
   });
 
   beforeEach(async () => {
+    const superAdminIds = (
+      await database.user.findMany({
+        where: { role: "SUPER_ADMIN" },
+        select: { id: true },
+      })
+    ).map(({ id }) => id);
+    const businessModelIds = (
+      await database.businessModel.findMany({
+        where: {
+          OR: [
+            { createdById: { in: superAdminIds } },
+            { updatedById: { in: superAdminIds } },
+          ],
+        },
+        select: { id: true },
+      })
+    ).map(({ id }) => id);
+    await database.businessModelEvent.deleteMany({
+      where: {
+        OR: [
+          { businessModelId: { in: businessModelIds } },
+          { actorId: { in: superAdminIds } },
+        ],
+      },
+    });
+    await database.businessModel.deleteMany({
+      where: { id: { in: businessModelIds } },
+    });
     await database.user.deleteMany({
       where: { role: "SUPER_ADMIN" },
     });
