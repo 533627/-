@@ -4,11 +4,42 @@ import {
   assertProjectManager,
   canAccessProject,
   nextProjectRevision,
+  prepareDirectProjectInput,
   ProjectManagementError,
   validateProjectStatusTransition,
 } from "@/features/projects/project-management";
 
 describe("project access and management rules", () => {
+  it("lets only the super admin prepare a direct project without an approval request", () => {
+    expect(
+      prepareDirectProjectInput(
+        { id: "owner", role: "SUPER_ADMIN", departmentId: null },
+        {
+          businessModelId: "00000000-0000-4000-8000-000000000010",
+          leadId: "operations-lead",
+          name: "  新渠道试跑  ",
+          objective: "  先建立项目，再逐步补充目标  ",
+        },
+      ),
+    ).toEqual({
+      businessModelId: "00000000-0000-4000-8000-000000000010",
+      leadId: "operations-lead",
+      name: "新渠道试跑",
+      objective: "先建立项目，再逐步补充目标",
+    });
+
+    expect(() =>
+      prepareDirectProjectInput(
+        { id: "ops", role: "OPERATIONS_ADMIN", departmentId: "ops" },
+        {
+          businessModelId: "00000000-0000-4000-8000-000000000010",
+          leadId: "operations-lead",
+          name: "越权项目",
+          objective: "",
+        },
+      ),
+    ).toThrowError(expect.objectContaining({ code: "PROJECT_MANAGE_FORBIDDEN" }));
+  });
   it("lets the highest administrator manage every project", () => {
     expect(() => assertProjectManager({ id: "owner", role: "SUPER_ADMIN", departmentId: null })).not.toThrow();
   });

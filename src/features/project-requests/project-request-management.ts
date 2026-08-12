@@ -42,7 +42,10 @@ export class ProjectRequestManagementError extends Error {
 }
 
 export function prepareExecutionSuggestionInput(actor: Actor, input: unknown) {
-  if (!hasCapability(actor.role, "EXECUTION_SUGGESTION_CREATE")) {
+  if (
+    actor.role === "SUPER_ADMIN" ||
+    !hasCapability(actor.role, "EXECUTION_SUGGESTION_CREATE")
+  ) {
     throw new ProjectRequestManagementError("EXECUTION_SUGGESTION_FORBIDDEN");
   }
   const parsed = executionSuggestionSchema.safeParse(input);
@@ -53,7 +56,10 @@ export function prepareExecutionSuggestionInput(actor: Actor, input: unknown) {
 }
 
 export function prepareProjectRequestInput(actor: Actor, input: unknown) {
-  if (!hasCapability(actor.role, "PROJECT_REQUEST_CREATE")) {
+  if (
+    actor.role === "SUPER_ADMIN" ||
+    !hasCapability(actor.role, "PROJECT_REQUEST_CREATE")
+  ) {
     throw new ProjectRequestManagementError("PROJECT_REQUEST_CREATE_FORBIDDEN");
   }
   const parsed = projectRequestSchema.safeParse(input);

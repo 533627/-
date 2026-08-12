@@ -9,6 +9,8 @@ import {
   PERMISSION_MATRIX,
   canAdministerAccount,
   canAssignTask,
+  canAccessDepartmentConversation,
+  canAccessProjectConversation,
   canManageDepartmentWork,
   canViewDepartmentMembers,
   hasCapability,
@@ -157,5 +159,24 @@ describe("task assignment scope", () => {
 
   it("never allows employees to assign tasks", () => {
     expect(canAssignTask(employee, "customer-service")).toBe(false);
+  });
+});
+
+describe("conversation scope", () => {
+  it("allows company administrators into every department conversation", () => {
+    expect(canAccessDepartmentConversation(superAdmin, "warehouse")).toBe(true);
+    expect(canAccessDepartmentConversation(operationsAdmin, "warehouse")).toBe(true);
+  });
+
+  it("limits other staff to their own department conversation", () => {
+    expect(canAccessDepartmentConversation(employee, "customer-service")).toBe(true);
+    expect(canAccessDepartmentConversation(employee, "warehouse")).toBe(false);
+  });
+
+  it("allows only super admins or active project members into a project conversation", () => {
+    expect(canAccessProjectConversation(superAdmin, false)).toBe(true);
+    expect(canAccessProjectConversation(operationsAdmin, false)).toBe(false);
+    expect(canAccessProjectConversation(operationsAdmin, true)).toBe(true);
+    expect(canAccessProjectConversation(employee, false)).toBe(false);
   });
 });

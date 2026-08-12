@@ -51,12 +51,13 @@ export function BusinessModelForm({ mode, values }: { mode: "create" | "update";
   );
   return <form action={action} className="mt-6 grid gap-4 sm:grid-cols-2">
     {values?.id ? <><input name="businessModelId" type="hidden" value={values.id} /><input name="revision" type="hidden" value={values.revision} /></> : null}
-    <Field label="标题" name="title" defaultValue={values?.title} maxLength={200} required className="sm:col-span-2" />
-    <Field label="行业 / 类目" name="category" defaultValue={values?.category} maxLength={100} required />
-    <Field label="目标平台" name="targetPlatform" defaultValue={values?.targetPlatform} maxLength={100} required />
-    <LongField label="机会说明" name="opportunity" defaultValue={values?.opportunity} required className="sm:col-span-2" />
-    <LongField label="商业逻辑" name="businessLogic" defaultValue={values?.businessLogic} required className="sm:col-span-2" />
-    <LongField label="执行打法" name="executionPlan" defaultValue={values?.executionPlan} required className="sm:col-span-2" />
+    <Field label="标题（必填）" name="title" defaultValue={values?.title} maxLength={200} required className="sm:col-span-2" />
+    <div className="alert alert-info alert-soft sm:col-span-2" role="status">除标题外均可稍后补充，先把想法保存下来即可。</div>
+    <Field label="行业 / 类目（选填）" name="category" defaultValue={values?.category} maxLength={100} />
+    <Field label="目标平台（选填）" name="targetPlatform" defaultValue={values?.targetPlatform} maxLength={100} />
+    <LongField label="机会说明（选填）" name="opportunity" defaultValue={values?.opportunity} className="sm:col-span-2" />
+    <LongField label="商业逻辑（选填）" name="businessLogic" defaultValue={values?.businessLogic} className="sm:col-span-2" />
+    <LongField label="执行打法（选填）" name="executionPlan" defaultValue={values?.executionPlan} className="sm:col-span-2" />
     <LongField label="成本假设" name="costAssumptions" defaultValue={values?.costAssumptions} />
     <LongField label="收益假设" name="revenueAssumptions" defaultValue={values?.revenueAssumptions} />
     <LongField label="主要风险" name="risks" defaultValue={values?.risks} className="sm:col-span-2" />

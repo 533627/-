@@ -47,14 +47,14 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
 
     <div className="grid gap-6 xl:grid-cols-[minmax(0,1.5fr)_minmax(20rem,1fr)]">
       <div className="space-y-6">
-        <section aria-labelledby="source-title" className="card card-border bg-base-100"><div className="card-body p-5"><h2 className="card-title" id="source-title">立项来源</h2><p className="text-sm text-base-content/55">{project.sourceBusinessModel.category}</p><Link className="link text-lg font-semibold" href={`/business-models/${project.sourceBusinessModel.id}`}>{project.sourceBusinessModel.title}</Link><div className="mt-2 border-l-2 border-base-300 pl-4"><p className="text-xs font-medium text-base-content/50">运营执行建议</p><p className="mt-1 whitespace-pre-wrap leading-6 text-base-content/70">{project.sourceRequest.suggestion.content}</p></div></div></section>
+        <section aria-labelledby="source-title" className="card card-border bg-base-100"><div className="card-body p-5"><h2 className="card-title" id="source-title">立项来源</h2><p className="text-sm text-base-content/55">{project.sourceBusinessModel.category || "未填写类目"}</p><Link className="link text-lg font-semibold" href={`/business-models/${project.sourceBusinessModel.id}`}>{project.sourceBusinessModel.title}</Link>{project.sourceRequest ? <div className="mt-2 border-l-2 border-base-300 pl-4"><p className="text-xs font-medium text-base-content/50">运营执行建议</p><p className="mt-1 whitespace-pre-wrap leading-6 text-base-content/70">{project.sourceRequest.suggestion.content}</p></div> : <div className="alert alert-info alert-soft mt-3" role="status">由最高管理员直接立项，无审批申请。</div>}</div></section>
         <ProjectTaskPanel
           assignableMembers={assignableMembers?.map((member) => ({ id: member.id, name: member.name, departmentName: member.department?.name ?? "未分配部门" })) ?? null}
           projectId={project.id}
           summary={taskSummary}
           tasks={tasks}
         />
-        <section aria-labelledby="workspace-title" className="card card-border bg-base-100"><div className="card-body p-5"><h2 className="card-title" id="workspace-title">其他协作区</h2><div className="grid gap-3 sm:grid-cols-2"><WorkspacePlaceholder title="项目文件" text="图片与附件将在文件模块接入。" /><WorkspacePlaceholder title="协作讨论" text="项目群已建立，消息能力将在后续接入。" /></div></div></section>
+        <section aria-labelledby="workspace-title" className="card card-border bg-base-100"><div className="card-body p-5"><h2 className="card-title" id="workspace-title">协作空间</h2><div className="grid gap-3 sm:grid-cols-2"><WorkspacePlaceholder title="项目文件" text="图片与附件将在文件模块接入。" /><div className="rounded-box border border-base-300 bg-base-200/40 p-4"><h3 className="font-semibold">项目群聊</h3><p className="mt-2 text-sm leading-6 text-base-content/60">项目成员可以在专属群聊同步进展。</p><Link className="btn btn-sm mt-3" href={`/conversations?kind=project&id=${project.id}`}>进入群聊</Link></div></div></div></section>
         <ProjectTimeline events={project.events} />
       </div>
 

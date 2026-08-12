@@ -15,6 +15,14 @@ const operationsAdmin = {
 const employee = { id: "employee", role: "EMPLOYEE", departmentId: null } as const;
 
 describe("execution suggestions", () => {
+  it("keeps the super admin out of the operations suggestion workflow", () => {
+    expect(() =>
+      prepareExecutionSuggestionInput(owner, {
+        businessModelId: "00000000-0000-4000-8000-000000000010",
+        content: "不应由最高管理员填写",
+      }),
+    ).toThrowError(expect.objectContaining({ code: "EXECUTION_SUGGESTION_FORBIDDEN" }));
+  });
   it("normalizes an operations administrator's suggestion", () => {
     expect(
       prepareExecutionSuggestionInput(operationsAdmin, {
@@ -44,6 +52,16 @@ describe("execution suggestions", () => {
 });
 
 describe("project requests", () => {
+  it("keeps the super admin out of the self-approval request workflow", () => {
+    expect(() =>
+      prepareProjectRequestInput(owner, {
+        businessModelId: "00000000-0000-4000-8000-000000000010",
+        suggestionId: "00000000-0000-4000-8000-000000000011",
+        proposedName: "不应提交的申请",
+        objective: "最高管理员应直接立项",
+      }),
+    ).toThrowError(expect.objectContaining({ code: "PROJECT_REQUEST_CREATE_FORBIDDEN" }));
+  });
   it("normalizes a request linked to a suggestion", () => {
     expect(
       prepareProjectRequestInput(operationsAdmin, {

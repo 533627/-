@@ -96,5 +96,7 @@ function errorMessage(code: ProjectManagementError["code"]) {
     PROJECT_LEAD_REMOVAL_FORBIDDEN: "请先交接项目负责人，再移除原负责人。",
     PROJECT_DEPARTMENT_NOT_FOUND: "该部门已不在项目中。",
     PROJECT_DEPARTMENT_INACTIVE: "该部门已停用，不能加入项目。",
+    PROJECT_INPUT_INVALID: "项目资料不完整。",
+    PROJECT_SOURCE_NOT_ACTIONABLE: "商业模式或负责人当前不可用。",
   }[code];
 }

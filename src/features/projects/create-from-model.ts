@@ -1,6 +1,11 @@
 import { Prisma, type PrismaClient } from "@/generated/prisma/client";
 import { hasCapability } from "@/lib/authz/permissions";
 import type { Actor } from "@/lib/authz/types";
+import {
+  prepareDirectProjectInput,
+  ProjectManagementError,
+  type DirectProjectInput,
+} from "@/features/projects/project-management";
 
 const MAX_TRANSACTION_ATTEMPTS = 3;
 
@@ -111,4 +116,62 @@ export async function createProjectFromApprovedRequest(
   }
 
   throw new ProjectConversionError("PROJECT_CONVERSION_CONFLICT");
+}
+
+export async function createProjectDirectly(
+  database: PrismaClient,
+  actor: Actor,
+  input: DirectProjectInput,
+) {
+  const validated = prepareDirectProjectInput(actor, input);
+  return database.$transaction(async (transaction) => {
+    const [model, lead] = await Promise.all([
+      transaction.businessModel.findFirst({
+        where: { id: validated.businessModelId, status: "ACTIVE" },
+        select: { id: true },
+      }),
+      transaction.user.findFirst({
+        where: { id: validated.leadId, isActive: true },
+        select: { id: true, departmentId: true },
+      }),
+    ]);
+    if (!model || !lead) {
+      throw new ProjectManagementError("PROJECT_SOURCE_NOT_ACTIONABLE");
+    }
+    const project = await transaction.project.create({
+      data: {
+        name: validated.name,
+        objective: validated.objective,
+        sourceBusinessModelId: model.id,
+        leadId: lead.id,
+        createdById: actor.id,
+      },
+    });
+    await transaction.projectMember.createMany({
+      data: actor.id === lead.id
+        ? [{ projectId: project.id, userId: lead.id, role: "LEAD", addedById: actor.id }]
+        : [
+            { projectId: project.id, userId: lead.id, role: "LEAD", addedById: actor.id },
+            { projectId: project.id, userId: actor.id, role: "MEMBER", addedById: actor.id },
+          ],
+    });
+    if (lead.departmentId) {
+      await transaction.projectDepartment.create({
+        data: { projectId: project.id, departmentId: lead.departmentId, addedById: actor.id },
+      });
+    }
+    await transaction.projectConversation.create({
+      data: { projectId: project.id, createdById: actor.id },
+    });
+    await transaction.projectEvent.create({
+      data: {
+        projectId: project.id,
+        actorId: actor.id,
+        type: "CREATED",
+        revision: project.revision,
+        details: { source: "DIRECT", sourceBusinessModelId: model.id },
+      },
+    });
+    return project;
+  });
 }

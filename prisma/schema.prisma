@@ -106,6 +106,7 @@ model Department {
   membershipOrigins      DepartmentMembershipHistory[] @relation("MembershipFromDepartment")
   membershipDestinations DepartmentMembershipHistory[] @relation("MembershipToDepartment")
   projectDepartments     ProjectDepartment[]
+  messages               DepartmentMessage[]
 
   @@index([isActive])
   @@map("departments")
@@ -143,6 +144,8 @@ model User {
   addedProjectMembers         ProjectMember[]               @relation("ProjectMemberAddedBy")
   addedProjectDepartments     ProjectDepartment[]           @relation("ProjectDepartmentAddedBy")
   createdProjectConversations ProjectConversation[]         @relation("ProjectConversationCreatedBy")
+  projectMessages             ProjectMessage[]              @relation("ProjectMessageAuthor")
+  departmentMessages          DepartmentMessage[]           @relation("DepartmentMessageAuthor")
   projectEvents               ProjectEvent[]                @relation("ProjectEventActor")
   assignedTasks               Task[]                        @relation("TaskAssignee")
   createdTasks                Task[]                        @relation("TaskAssignedBy")
@@ -241,8 +244,8 @@ model Project {
   revision              Int                  @default(1)
   sourceBusinessModelId String               @db.Uuid
   sourceBusinessModel   BusinessModel        @relation(fields: [sourceBusinessModelId], references: [id], onDelete: Restrict)
-  sourceRequestId       String               @unique @db.Uuid
-  sourceRequest         ProjectRequest       @relation(fields: [sourceRequestId], references: [id], onDelete: Restrict)
+  sourceRequestId       String?              @unique @db.Uuid
+  sourceRequest         ProjectRequest?      @relation(fields: [sourceRequestId], references: [id], onDelete: Restrict)
   leadId                String
   lead                  User                 @relation("ProjectLead", fields: [leadId], references: [id], onDelete: Restrict)
   createdById           String
@@ -370,9 +373,38 @@ model ProjectConversation {
   createdById String
   createdBy   User     @relation("ProjectConversationCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
   createdAt   DateTime @default(now()) @db.Timestamptz(3)
+  messages    ProjectMessage[]
 
   @@index([createdById])
   @@map("project_conversations")
+}
+
+model ProjectMessage {
+  id             String              @id @default(uuid()) @db.Uuid
+  conversationId String              @db.Uuid
+  conversation   ProjectConversation @relation(fields: [conversationId], references: [id], onDelete: Restrict)
+  authorId       String
+  author         User                @relation("ProjectMessageAuthor", fields: [authorId], references: [id], onDelete: Restrict)
+  content        String              @db.VarChar(2000)
+  createdAt      DateTime            @default(now()) @db.Timestamptz(3)
+
+  @@index([conversationId, createdAt])
+  @@index([authorId])
+  @@map("project_messages")
+}
+
+model DepartmentMessage {
+  id           String     @id @default(uuid()) @db.Uuid
+  departmentId String     @db.Uuid
+  department   Department @relation(fields: [departmentId], references: [id], onDelete: Restrict)
+  authorId     String
+  author       User       @relation("DepartmentMessageAuthor", fields: [authorId], references: [id], onDelete: Restrict)
+  content      String     @db.VarChar(2000)
+  createdAt    DateTime   @default(now()) @db.Timestamptz(3)
+
+  @@index([departmentId, createdAt])
+  @@index([authorId])
+  @@map("department_messages")
 }
 
 model ProjectRequestEvent {

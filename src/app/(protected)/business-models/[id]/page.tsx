@@ -6,6 +6,8 @@ import { BusinessModelForm } from "@/features/business-models/business-model-for
 import { BusinessModelLifecycleActions } from "@/features/business-models/business-model-lifecycle-actions";
 import { BusinessModelStoreError, createPrismaBusinessModelStore } from "@/features/business-models/business-model-store";
 import { ProjectRequestPanel } from "@/features/project-requests/project-request-panel";
+import { DirectProjectForm } from "@/features/projects/direct-project-form";
+import { createPrismaProjectStore } from "@/features/projects/project-store";
 import { createPrismaProjectRequestStore } from "@/features/project-requests/project-request-store";
 import { hasCapability } from "@/lib/authz/permissions";
 import type { Actor } from "@/lib/authz/types";
@@ -23,8 +25,11 @@ export default async function BusinessModelDetailPage({ params }: { params: Prom
   try { record = await createPrismaBusinessModelStore(getDatabase()).get(actor, id); }
   catch (error) { if (error instanceof BusinessModelStoreError && error.code === "BUSINESS_MODEL_NOT_FOUND") notFound(); throw error; }
   const canManage = hasCapability(user.role, "BUSINESS_MODEL_MANAGE");
-  const canCreateRequest = hasCapability(user.role, "PROJECT_REQUEST_CREATE");
+  const canCreateRequest = user.role !== "SUPER_ADMIN" && hasCapability(user.role, "PROJECT_REQUEST_CREATE");
   const requestContext = await createPrismaProjectRequestStore(getDatabase()).getBusinessModelContext(actor, id);
+  const projectOptions = user.role === "SUPER_ADMIN"
+    ? await createPrismaProjectStore(getDatabase()).getManagementOptions(actor)
+    : null;
 
   return <div className="space-y-6">
     <nav className="breadcrumbs text-sm" aria-label="面包屑"><ul><li><Link href="/business-models">商业整理</Link></li><li>{record.title}</li></ul></nav>
@@ -40,7 +45,8 @@ export default async function BusinessModelDetailPage({ params }: { params: Prom
         <ContentSection title="执行打法" content={record.executionPlan} />
         <div className="grid gap-5 md:grid-cols-2"><ContentSection title="成本假设" content={record.costAssumptions} empty="暂未填写成本假设" /><ContentSection title="收益假设" content={record.revenueAssumptions} empty="暂未填写收益假设" /></div>
         <ContentSection title="主要风险" content={record.risks} empty="暂未填写风险" />
-        <ProjectRequestPanel businessModelId={record.id} canCreate={canCreateRequest} currentUserId={user.id} isActionable={record.status === "ACTIVE"} requests={requestContext.requests} suggestions={requestContext.suggestions} />
+        {projectOptions && record.status === "ACTIVE" ? <DirectProjectForm businessModelId={record.id} defaultName={record.title} leads={projectOptions.users.map((candidate) => ({ id: candidate.id, label: `${candidate.name} · ${candidate.department?.name ?? "未分配部门"}` }))} /> : null}
+        {user.role !== "SUPER_ADMIN" ? <ProjectRequestPanel businessModelId={record.id} canCreate={canCreateRequest} currentUserId={user.id} isActionable={record.status === "ACTIVE"} requests={requestContext.requests} suggestions={requestContext.suggestions} /> : null}
         {canManage && record.status === "ACTIVE" ? <section className="card card-border bg-base-100" aria-labelledby="edit-model-title"><div className="card-body p-4 sm:p-6"><h2 className="card-title" id="edit-model-title">编辑原始内容</h2><p className="text-sm text-base-content/60">保存会生成新版本；旧版本快照不会被覆盖。</p><BusinessModelForm mode="update" values={record} /></div></section> : null}
       </main>
       <aside className="space-y-5">

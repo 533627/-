@@ -7,6 +7,7 @@ export const BUSINESS_MODEL_STATUSES = ["ACTIVE", "ARCHIVED", "DELETED"] as cons
 export type BusinessModelStatus = (typeof BUSINESS_MODEL_STATUSES)[number];
 
 const optionalLongText = z.string().trim().max(10_000).default("");
+const optionalShortText = (max: number) => z.string().trim().max(max).default("");
 const labelList = z
   .array(z.string().trim().min(1).max(30))
   .max(20)
@@ -14,11 +15,11 @@ const labelList = z
 
 const businessModelInputSchema = z.object({
   title: z.string().trim().min(2).max(200),
-  category: z.string().trim().min(1).max(100),
-  targetPlatform: z.string().trim().min(1).max(100),
-  opportunity: z.string().trim().min(1).max(10_000),
-  businessLogic: z.string().trim().min(1).max(10_000),
-  executionPlan: z.string().trim().min(1).max(10_000),
+  category: optionalShortText(100),
+  targetPlatform: optionalShortText(100),
+  opportunity: optionalLongText,
+  businessLogic: optionalLongText,
+  executionPlan: optionalLongText,
   costAssumptions: optionalLongText,
   revenueAssumptions: optionalLongText,
   risks: optionalLongText,

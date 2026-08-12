@@ -13,6 +13,28 @@ const operationsAdmin = {
 } as const;
 
 describe("prepareBusinessModelInput", () => {
+  it("allows a title-only draft so details can be completed later", () => {
+    expect(
+      prepareBusinessModelInput(owner, {
+        title: "  待验证的新模式  ",
+        category: "",
+        targetPlatform: "",
+        opportunity: "",
+        businessLogic: "",
+        executionPlan: "",
+        tags: [],
+        keywords: [],
+      }),
+    ).toMatchObject({
+      title: "待验证的新模式",
+      category: "",
+      targetPlatform: "",
+      opportunity: "",
+      businessLogic: "",
+      executionPlan: "",
+    });
+  });
+
   it("normalizes original content, tags, and keywords", () => {
     expect(
       prepareBusinessModelInput(owner, {
