@@ -1,5 +1,12 @@
 import { defineConfig, devices } from "@playwright/test";
 
+import { requireDedicatedTestDatabase } from "./src/test-support/database-safety";
+
+requireDedicatedTestDatabase(
+  process.env.TEST_DATABASE_URL,
+  process.env.DATABASE_URL,
+);
+
 export default defineConfig({
   testDir: "./e2e",
   fullyParallel: true,

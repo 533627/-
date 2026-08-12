@@ -5,6 +5,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { PrismaClient } from "@/generated/prisma/client";
 import { bootstrapSuperAdmin } from "@/features/accounts/bootstrap-admin";
 import { createPrismaBootstrapAdminStore } from "@/features/accounts/bootstrap-admin-store";
+import { bootstrapTestUserFilter } from "@/test-support/database-safety";
 
 const testDatabaseUrl = process.env.TEST_DATABASE_URL;
 const describeWithDatabase = testDatabaseUrl ? describe : describe.skip;
@@ -27,7 +28,7 @@ describeWithDatabase("super-admin bootstrap database integration", () => {
   beforeEach(async () => {
     const superAdminIds = (
       await database.user.findMany({
-        where: { role: "SUPER_ADMIN" },
+        where: bootstrapTestUserFilter(),
         select: { id: true },
       })
     ).map(({ id }) => id);
@@ -53,9 +54,7 @@ describeWithDatabase("super-admin bootstrap database integration", () => {
     await database.businessModel.deleteMany({
       where: { id: { in: businessModelIds } },
     });
-    await database.user.deleteMany({
-      where: { role: "SUPER_ADMIN" },
-    });
+    await database.user.deleteMany({ where: bootstrapTestUserFilter() });
   });
 
   afterAll(async () => {
