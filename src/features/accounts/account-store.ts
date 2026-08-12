@@ -6,7 +6,7 @@ import {
   assertCanManageAccount,
 } from "@/features/accounts/account-management";
 import { hasCapability } from "@/lib/authz/permissions";
-import type { Actor, Role } from "@/lib/authz/types";
+import type { Actor, OperationsTeam, Role } from "@/lib/authz/types";
 
 export type AccountCreationCommand = {
   name: string;
@@ -14,6 +14,7 @@ export type AccountCreationCommand = {
   email: string;
   role: Role;
   departmentId: string | null;
+  operationsTeam: OperationsTeam | null;
   passwordHash: string;
 };
 
@@ -22,6 +23,7 @@ export class AccountStoreError extends Error {
     public readonly code:
       | "USERNAME_ALREADY_EXISTS"
       | "DEPARTMENT_UNAVAILABLE"
+      | "OPERATIONS_TEAM_INVALID"
       | "ACCOUNT_NOT_FOUND",
   ) {
     super(code);
@@ -37,11 +39,18 @@ export function createPrismaAccountStore(database: PrismaClient) {
           if (input.departmentId) {
             const department = await transaction.department.findFirst({
               where: { id: input.departmentId, isActive: true },
-              select: { id: true },
+              select: { id: true, code: true },
             });
             if (!department) {
               throw new AccountStoreError("DEPARTMENT_UNAVAILABLE");
             }
+            if (
+              (department.code === "OPERATIONS") !== Boolean(input.operationsTeam)
+            ) {
+              throw new AccountStoreError("OPERATIONS_TEAM_INVALID");
+            }
+          } else if (input.operationsTeam) {
+            throw new AccountStoreError("OPERATIONS_TEAM_INVALID");
           }
 
           const userId = randomUUID();
@@ -55,6 +64,7 @@ export function createPrismaAccountStore(database: PrismaClient) {
               displayUsername: input.username,
               role: input.role,
               departmentId: input.departmentId,
+              operationsTeam: input.operationsTeam,
               accounts: {
                 create: {
                   id: randomUUID(),
@@ -116,6 +126,7 @@ export function createPrismaAccountStore(database: PrismaClient) {
             username: true,
             role: true,
             isActive: true,
+            operationsTeam: true,
             department: { select: { id: true, name: true } },
             createdAt: true,
           },

@@ -49,7 +49,7 @@ describeWithDatabase.sequential("department administration database operations",
   });
 
   it("transfers a member and stores the actor plus both departments atomically", async () => {
-    await store.transferMember(operationsAdmin, memberId, destinationId);
+    await store.transferMember(operationsAdmin, memberId, destinationId, null);
 
     await expect(database.user.findUniqueOrThrow({ where: { id: memberId } }))
       .resolves.toMatchObject({ departmentId: destinationId });

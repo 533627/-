@@ -7,6 +7,9 @@ export const ROLES = [
 
 export type Role = (typeof ROLES)[number];
 
+export const OPERATIONS_TEAMS = ["TEAM_ONE", "TEAM_TWO"] as const;
+export type OperationsTeam = (typeof OPERATIONS_TEAMS)[number];
+
 export const CAPABILITIES = [
   "ACCOUNT_MANAGE",
   "DEPARTMENT_STRUCTURE_MANAGE",
@@ -34,4 +37,5 @@ export type Actor = {
   id: string;
   role: Role;
   departmentId: string | null;
+  operationsTeam?: OperationsTeam | null;
 };

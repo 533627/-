@@ -16,6 +16,11 @@ enum UserRole {
   EMPLOYEE
 }
 
+enum OperationsTeam {
+  TEAM_ONE
+  TEAM_TWO
+}
+
 enum BusinessModelStatus {
   ACTIVE
   ARCHIVED
@@ -126,6 +131,7 @@ model User {
   isActive                    Boolean                       @default(true)
   departmentId                String?                       @db.Uuid
   department                  Department?                   @relation(fields: [departmentId], references: [id], onDelete: Restrict)
+  operationsTeam              OperationsTeam?
   sessions                    Session[]
   accounts                    Account[]
   membershipChanges           DepartmentMembershipHistory[] @relation("MembershipChangedMember")
@@ -400,9 +406,10 @@ model DepartmentMessage {
   authorId     String
   author       User       @relation("DepartmentMessageAuthor", fields: [authorId], references: [id], onDelete: Restrict)
   content      String     @db.VarChar(2000)
+  operationsTeam OperationsTeam?
   createdAt    DateTime   @default(now()) @db.Timestamptz(3)
 
-  @@index([departmentId, createdAt])
+  @@index([departmentId, operationsTeam, createdAt])
   @@index([authorId])
   @@map("department_messages")
 }
@@ -466,6 +473,8 @@ model DepartmentMembershipHistory {
   fromDepartment   Department? @relation("MembershipFromDepartment", fields: [fromDepartmentId], references: [id], onDelete: Restrict)
   toDepartmentId   String      @db.Uuid
   toDepartment     Department  @relation("MembershipToDepartment", fields: [toDepartmentId], references: [id], onDelete: Restrict)
+  fromOperationsTeam OperationsTeam?
+  toOperationsTeam   OperationsTeam?
   changedById      String
   changedBy        User        @relation("MembershipChangedBy", fields: [changedById], references: [id], onDelete: Restrict)
   changedAt        DateTime    @default(now()) @db.Timestamptz(3)

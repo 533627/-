@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   assertCanTransferMember,
+  normalizeDestinationOperationsTeam,
   prepareDepartmentCreation,
 } from "@/features/departments/department-management";
 
@@ -31,6 +32,19 @@ describe("prepareDepartmentCreation", () => {
     expect(() =>
       prepareDepartmentCreation(operationsAdmin, { code: "LIVE", name: "直播部" }),
     ).toThrowError(expect.objectContaining({ code: "DEPARTMENT_OPERATION_FORBIDDEN" }));
+  });
+});
+
+describe("operations team transfers", () => {
+  it("requires a team when moving a member into operations", () => {
+    expect(() => normalizeDestinationOperationsTeam(true, null)).toThrowError(
+      expect.objectContaining({ code: "OPERATIONS_TEAM_REQUIRED" }),
+    );
+    expect(normalizeDestinationOperationsTeam(true, "TEAM_TWO")).toBe("TEAM_TWO");
+  });
+
+  it("clears the operations team when moving to another department", () => {
+    expect(normalizeDestinationOperationsTeam(false, "TEAM_ONE")).toBeNull();
   });
 });
 

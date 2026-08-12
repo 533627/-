@@ -6,7 +6,7 @@ import { AccountRowActions } from "@/features/accounts/account-row-actions";
 import { createPrismaAccountStore } from "@/features/accounts/account-store";
 import { requireCurrentUser } from "@/features/auth/current-user-server";
 import { hasCapability } from "@/lib/authz/permissions";
-import type { Actor, Role } from "@/lib/authz/types";
+import type { Actor, OperationsTeam, Role } from "@/lib/authz/types";
 import { getDatabase } from "@/lib/db";
 
 const ROLE_LABELS: Record<Role, string> = {
@@ -14,6 +14,10 @@ const ROLE_LABELS: Record<Role, string> = {
   OPERATIONS_ADMIN: "运营组长",
   DEPARTMENT_MANAGER: "部门组长",
   EMPLOYEE: "员工",
+};
+const OPERATIONS_TEAM_LABELS: Record<OperationsTeam, string> = {
+  TEAM_ONE: "运营一组",
+  TEAM_TWO: "运营二组",
 };
 
 export default async function AccountsPage({
@@ -31,6 +35,7 @@ export default async function AccountsPage({
     id: user.id,
     role: user.role,
     departmentId: user.department?.id ?? null,
+    operationsTeam: user.operationsTeam,
   };
   const database = getDatabase();
   const [accountPage, departments] = await Promise.all([
@@ -42,7 +47,7 @@ export default async function AccountsPage({
     database.department.findMany({
       where: { isActive: true },
       orderBy: { name: "asc" },
-      select: { id: true, name: true },
+      select: { id: true, name: true, code: true },
     }),
   ]);
 
@@ -122,6 +127,11 @@ export default async function AccountsPage({
                       <span className="badge badge-sm badge-ghost">
                         {account.department?.name ?? "全公司"}
                       </span>
+                      {account.operationsTeam ? (
+                        <span className="badge badge-sm badge-info badge-soft">
+                          {OPERATIONS_TEAM_LABELS[account.operationsTeam]}
+                        </span>
+                      ) : null}
                       <span className="text-xs text-base-content/50">
                         创建于 {formatDate(account.createdAt)}
                       </span>

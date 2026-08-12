@@ -11,6 +11,7 @@ import {
   canAssignTask,
   canAccessDepartmentConversation,
   canAccessProjectConversation,
+  canAccessOperationsTeamConversation,
   canManageDepartmentWork,
   canViewDepartmentMembers,
   hasCapability,
@@ -25,6 +26,7 @@ const operationsAdmin: Actor = {
   id: "operations-admin",
   role: "OPERATIONS_ADMIN",
   departmentId: "operations",
+  operationsTeam: "TEAM_ONE",
 };
 const customerServiceManager: Actor = {
   id: "customer-service-manager",
@@ -178,5 +180,12 @@ describe("conversation scope", () => {
     expect(canAccessProjectConversation(operationsAdmin, false)).toBe(false);
     expect(canAccessProjectConversation(operationsAdmin, true)).toBe(true);
     expect(canAccessProjectConversation(employee, false)).toBe(false);
+  });
+
+  it("isolates the two internal operations team conversations", () => {
+    expect(canAccessOperationsTeamConversation(superAdmin, "operations", "TEAM_TWO")).toBe(true);
+    expect(canAccessOperationsTeamConversation(operationsAdmin, "operations", "TEAM_ONE")).toBe(true);
+    expect(canAccessOperationsTeamConversation(operationsAdmin, "operations", "TEAM_TWO")).toBe(false);
+    expect(canAccessOperationsTeamConversation(employee, "operations", "TEAM_ONE")).toBe(false);
   });
 });

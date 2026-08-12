@@ -4,6 +4,7 @@ import {
   type Actor,
   type Capability,
   type Role,
+  type OperationsTeam,
 } from "@/lib/authz/types";
 
 type PermissionMatrix = Readonly<
@@ -123,6 +124,16 @@ export function canAccessProjectConversation(
   }
 
   return actor.role === "SUPER_ADMIN" || isActiveProjectMember;
+}
+
+export function canAccessOperationsTeamConversation(
+  actor: Actor,
+  operationsDepartmentId: string,
+  targetTeam: OperationsTeam,
+) {
+  if (!hasCapability(actor.role, "DEPARTMENT_CONVERSATION_ACCESS")) return false;
+  if (actor.role === "SUPER_ADMIN") return true;
+  return actor.departmentId === operationsDepartmentId && actor.operationsTeam === targetTeam;
 }
 
 function hasDepartmentScope(

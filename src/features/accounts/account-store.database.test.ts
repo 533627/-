@@ -62,6 +62,7 @@ describeWithDatabase.sequential("account management database operations", () => 
       email: `${username}@internal.invalid`,
       role: "EMPLOYEE" as const,
       departmentId,
+      operationsTeam: null,
       passwordHash,
     };
 

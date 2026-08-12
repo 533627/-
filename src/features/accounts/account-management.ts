@@ -3,7 +3,7 @@ import { z } from "zod";
 
 import { generateTemporaryPassword } from "@/features/accounts/bootstrap-admin";
 import { canAdministerAccount } from "@/lib/authz/permissions";
-import { ROLES, type Actor, type Role } from "@/lib/authz/types";
+import { OPERATIONS_TEAMS, ROLES, type Actor, type Role } from "@/lib/authz/types";
 
 const accountInputSchema = z.object({
   name: z.string().trim().min(1).max(100),
@@ -16,6 +16,8 @@ const accountInputSchema = z.object({
     .transform((username) => username.toLowerCase()),
   role: z.enum(ROLES),
   departmentId: z.uuid().nullable(),
+  isOperationsDepartment: z.boolean(),
+  operationsTeam: z.enum(OPERATIONS_TEAMS).nullable(),
 });
 
 type PasswordDependencies = {
@@ -34,6 +36,7 @@ export class AccountManagementError extends Error {
     public readonly code:
       | "INVALID_ACCOUNT_INPUT"
       | "DEPARTMENT_REQUIRED"
+      | "OPERATIONS_TEAM_REQUIRED"
       | "ACCOUNT_OPERATION_FORBIDDEN"
       | "INVALID_GENERATED_PASSWORD"
       | "SELF_DEACTIVATION",
@@ -65,6 +68,12 @@ export async function prepareAccountCreation(
   if (role !== "SUPER_ADMIN" && !departmentId) {
     throw new AccountManagementError("DEPARTMENT_REQUIRED");
   }
+  const operationsTeam = role !== "SUPER_ADMIN" && parsedInput.data.isOperationsDepartment
+    ? parsedInput.data.operationsTeam
+    : null;
+  if (parsedInput.data.isOperationsDepartment && !operationsTeam) {
+    throw new AccountManagementError("OPERATIONS_TEAM_REQUIRED");
+  }
 
   const password = dependencies.generatePassword();
   assertGeneratedPassword(password);
@@ -76,6 +85,7 @@ export async function prepareAccountCreation(
       email: `${username}@internal.invalid`,
       role,
       departmentId,
+      operationsTeam,
       passwordHash: await dependencies.hashPassword(password),
     },
     password,

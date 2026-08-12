@@ -40,11 +40,20 @@ export async function createAccountAction(
   if (!hasCapability(actor.role, "ACCOUNT_MANAGE")) return forbidden();
 
   try {
+    const departmentId = optionalString(formData.get("departmentId"));
+    const department = departmentId
+      ? await getDatabase().department.findFirst({
+          where: { id: departmentId, isActive: true },
+          select: { code: true },
+        })
+      : null;
     const prepared = await prepareAccountCreation(actor, {
       name: formData.get("name"),
       username: formData.get("username"),
       role: formData.get("role"),
-      departmentId: optionalString(formData.get("departmentId")),
+      departmentId,
+      isOperationsDepartment: department?.code === "OPERATIONS",
+      operationsTeam: optionalString(formData.get("operationsTeam")),
     });
     const created = await createPrismaAccountStore(getDatabase()).create(
       prepared.account,
@@ -140,6 +149,7 @@ function toActor(user: Awaited<ReturnType<typeof requireCurrentUser>>): Actor {
     id: user.id,
     role: user.role,
     departmentId: user.department?.id ?? null,
+    operationsTeam: user.operationsTeam,
   };
 }
 
@@ -160,6 +170,7 @@ function actionError(error: unknown): AccountActionState {
     const messages: Record<AccountManagementError["code"], string> = {
       INVALID_ACCOUNT_INPUT: "账号资料格式不正确，请检查后重试。",
       DEPARTMENT_REQUIRED: "该角色必须选择所属部门。",
+      OPERATIONS_TEAM_REQUIRED: "运营部账号必须选择运营一组或运营二组。",
       ACCOUNT_OPERATION_FORBIDDEN: "你没有权限操作这个账号。",
       INVALID_GENERATED_PASSWORD: "密码生成失败，请重新尝试。",
       SELF_DEACTIVATION: "不能停用当前正在使用的账号。",
@@ -171,6 +182,7 @@ function actionError(error: unknown): AccountActionState {
     const messages: Record<AccountStoreError["code"], string> = {
       USERNAME_ALREADY_EXISTS: "这个登录账号已经存在，请更换一个账号。",
       DEPARTMENT_UNAVAILABLE: "所选部门不存在或已停用。",
+      OPERATIONS_TEAM_INVALID: "运营分组与所属部门不一致，请重新选择。",
       ACCOUNT_NOT_FOUND: "账号不存在或你无权操作。",
     };
     return { status: "error", message: messages[error.code] };

@@ -2,6 +2,7 @@ import { Prisma, type PrismaClient } from "@/generated/prisma/client";
 import {
   assertCanTransferMember,
   DepartmentManagementError,
+  normalizeDestinationOperationsTeam,
 } from "@/features/departments/department-management";
 import { hasCapability } from "@/lib/authz/permissions";
 import type { Actor } from "@/lib/authz/types";
@@ -61,6 +62,7 @@ export function createPrismaDepartmentStore(database: PrismaClient) {
               username: true,
               role: true,
               isActive: true,
+              operationsTeam: true,
               membershipChanges: {
                 orderBy: { changedAt: "desc" },
                 take: 1,
@@ -97,31 +99,42 @@ export function createPrismaDepartmentStore(database: PrismaClient) {
       });
     },
 
-    async transferMember(actor: Actor, memberId: string, destinationDepartmentId: string) {
+    async transferMember(
+      actor: Actor,
+      memberId: string,
+      destinationDepartmentId: string,
+      rawOperationsTeam: unknown,
+    ) {
       return database.$transaction(async (transaction) => {
         const [member, destination] = await Promise.all([
           transaction.user.findUnique({
             where: { id: memberId },
-            select: { id: true, role: true, departmentId: true },
+            select: { id: true, role: true, departmentId: true, operationsTeam: true },
           }),
           transaction.department.findFirst({
             where: { id: destinationDepartmentId, isActive: true },
-            select: { id: true },
+            select: { id: true, code: true },
           }),
         ]);
         if (!member) throw new DepartmentStoreError("MEMBER_NOT_FOUND");
         if (!destination) throw new DepartmentStoreError("DESTINATION_UNAVAILABLE");
-        assertCanTransferMember(actor, member, destination.id);
+        const operationsTeam = normalizeDestinationOperationsTeam(
+          destination.code === "OPERATIONS",
+          rawOperationsTeam,
+        );
+        assertCanTransferMember(actor, member, destination.id, operationsTeam);
 
         await transaction.user.update({
           where: { id: member.id },
-          data: { departmentId: destination.id },
+          data: { departmentId: destination.id, operationsTeam },
         });
         await transaction.departmentMembershipHistory.create({
           data: {
             memberId: member.id,
             fromDepartmentId: member.departmentId,
             toDepartmentId: destination.id,
+            fromOperationsTeam: member.operationsTeam,
+            toOperationsTeam: operationsTeam,
             changedById: actor.id,
           },
         });

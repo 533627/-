@@ -1,4 +1,4 @@
-import type { Role } from "@/lib/authz/types";
+import type { OperationsTeam, Role } from "@/lib/authz/types";
 
 type ShellUserRecord = {
   id: string;
@@ -6,6 +6,7 @@ type ShellUserRecord = {
   username: string | null;
   displayUsername: string | null;
   role: Role;
+  operationsTeam: OperationsTeam | null;
   isActive: boolean;
   department: { id: string; name: string } | null;
 };
@@ -22,6 +23,7 @@ export type CurrentUser = {
   name: string;
   username: string;
   role: Role;
+  operationsTeam: OperationsTeam | null;
   department: { id: string; name: string } | null;
 };
 
@@ -46,6 +48,7 @@ export async function loadCurrentUser(
     name: user.name,
     username: user.displayUsername ?? user.username ?? user.name,
     role: user.role,
+    operationsTeam: user.operationsTeam,
     department: user.department,
   };
 }

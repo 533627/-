@@ -23,14 +23,19 @@ export function AccountCreateDialog({
   departments,
 }: {
   actorRole: Role;
-  departments: ReadonlyArray<{ id: string; name: string }>;
+  departments: ReadonlyArray<{ id: string; name: string; code: string }>;
 }) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const [role, setRole] = useState<Role>("EMPLOYEE");
+  const [departmentId, setDepartmentId] = useState("");
   const [state, action] = useActionState(createAccountAction, initialState);
   const availableRoles = roleOptions.filter(
     ({ value }) => actorRole === "SUPER_ADMIN" || value !== "SUPER_ADMIN",
   );
+  const isOperationsDepartment =
+    role !== "SUPER_ADMIN" &&
+    departments.find((department) => department.id === departmentId)?.code ===
+      "OPERATIONS";
 
   return (
     <>
@@ -109,7 +114,9 @@ export function AccountCreateDialog({
                 disabled={role === "SUPER_ADMIN"}
                 id="account-department"
                 name="departmentId"
+                onChange={(event) => setDepartmentId(event.target.value)}
                 required={role !== "SUPER_ADMIN"}
+                value={role === "SUPER_ADMIN" ? "" : departmentId}
               >
                 <option value="">请选择部门</option>
                 {departments.map((department) => (
@@ -119,6 +126,22 @@ export function AccountCreateDialog({
                 ))}
               </select>
             </label>
+            {isOperationsDepartment ? (
+              <label className="fieldset sm:col-span-2" htmlFor="account-operations-team">
+                <span className="fieldset-legend">运营分组</span>
+                <select
+                  className="select w-full"
+                  id="account-operations-team"
+                  name="operationsTeam"
+                  required
+                >
+                  <option value="">请选择运营分组</option>
+                  <option value="TEAM_ONE">运营一组</option>
+                  <option value="TEAM_TWO">运营二组</option>
+                </select>
+                <span className="label">员工只能进入自己运营小组的内部群聊。</span>
+              </label>
+            ) : null}
 
             {state.status === "error" ? (
               <div className="alert alert-error alert-soft sm:col-span-2" role="alert">

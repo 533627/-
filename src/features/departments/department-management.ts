@@ -4,7 +4,7 @@ import {
   canAdministerAccount,
   hasCapability,
 } from "@/lib/authz/permissions";
-import type { Actor, Role } from "@/lib/authz/types";
+import { OPERATIONS_TEAMS, type Actor, type OperationsTeam, type Role } from "@/lib/authz/types";
 
 const departmentInputSchema = z.object({
   code: z
@@ -21,6 +21,7 @@ export type DepartmentMemberTarget = {
   id: string;
   role: Role;
   departmentId: string | null;
+  operationsTeam?: OperationsTeam | null;
 };
 
 export class DepartmentManagementError extends Error {
@@ -29,11 +30,22 @@ export class DepartmentManagementError extends Error {
       | "INVALID_DEPARTMENT_INPUT"
       | "DEPARTMENT_OPERATION_FORBIDDEN"
       | "MEMBER_OPERATION_FORBIDDEN"
-      | "MEMBER_ALREADY_IN_DEPARTMENT",
+      | "MEMBER_ALREADY_IN_DEPARTMENT"
+      | "OPERATIONS_TEAM_REQUIRED"
   ) {
     super(code);
     this.name = "DepartmentManagementError";
   }
+}
+
+export function normalizeDestinationOperationsTeam(
+  isOperationsDepartment: boolean,
+  rawTeam: unknown,
+): OperationsTeam | null {
+  if (!isOperationsDepartment) return null;
+  const parsed = z.enum(OPERATIONS_TEAMS).safeParse(rawTeam);
+  if (!parsed.success) throw new DepartmentManagementError("OPERATIONS_TEAM_REQUIRED");
+  return parsed.data;
 }
 
 export function prepareDepartmentCreation(actor: Actor, input: unknown) {
@@ -52,6 +64,7 @@ export function assertCanTransferMember(
   actor: Actor,
   target: DepartmentMemberTarget,
   destinationDepartmentId: string,
+  destinationOperationsTeam: OperationsTeam | null = null,
 ) {
   if (
     !hasCapability(actor.role, "ACCOUNT_MANAGE") ||
@@ -60,7 +73,10 @@ export function assertCanTransferMember(
   ) {
     throw new DepartmentManagementError("MEMBER_OPERATION_FORBIDDEN");
   }
-  if (target.departmentId === destinationDepartmentId) {
+  if (
+    target.departmentId === destinationDepartmentId &&
+    (target.operationsTeam ?? null) === destinationOperationsTeam
+  ) {
     throw new DepartmentManagementError("MEMBER_ALREADY_IN_DEPARTMENT");
   }
 }

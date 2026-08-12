@@ -26,6 +26,7 @@ describe("loadCurrentUser", () => {
             username: "ops.lead",
             displayUsername: "ops.lead",
             role: "OPERATIONS_ADMIN",
+            operationsTeam: "TEAM_ONE",
             isActive: true,
             department: { id: "dept-1", name: "运营部" },
           }),
@@ -37,6 +38,7 @@ describe("loadCurrentUser", () => {
       name: "运营组长",
       username: "ops.lead",
       role: "OPERATIONS_ADMIN",
+      operationsTeam: "TEAM_ONE",
       department: { id: "dept-1", name: "运营部" },
     });
   });
@@ -64,6 +66,7 @@ describe("loadCurrentUser", () => {
             username: "disabled.user",
             displayUsername: "disabled.user",
             role: "EMPLOYEE",
+            operationsTeam: null,
             isActive: false,
             department: { id: "dept-1", name: "运营部" },
           }),

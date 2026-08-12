@@ -28,6 +28,8 @@ describe("prepareAccountCreation", () => {
         username: "  Service.Lin  ",
         role: "EMPLOYEE",
         departmentId: operationsDepartmentId,
+        isOperationsDepartment: false,
+        operationsTeam: null,
       },
       dependencies(),
     );
@@ -39,6 +41,7 @@ describe("prepareAccountCreation", () => {
         email: "service.lin@internal.invalid",
         role: "EMPLOYEE",
         departmentId: operationsDepartmentId,
+        operationsTeam: null,
         passwordHash: "stored-password-hash",
       },
       password: generatedPassword,
@@ -55,6 +58,8 @@ describe("prepareAccountCreation", () => {
           username: "other.owner",
           role: "SUPER_ADMIN",
           departmentId: null,
+          isOperationsDepartment: false,
+          operationsTeam: null,
         },
         dependencies(),
       ),
@@ -70,6 +75,8 @@ describe("prepareAccountCreation", () => {
           username: "missing.department",
           role: "EMPLOYEE",
           departmentId: null,
+          isOperationsDepartment: false,
+          operationsTeam: null,
         },
         dependencies(),
       ),
@@ -87,6 +94,8 @@ describe("prepareAccountCreation", () => {
           username: "中文账号",
           role: "EMPLOYEE",
           departmentId: operationsDepartmentId,
+          isOperationsDepartment: false,
+          operationsTeam: null,
         },
         {
           generatePassword: () => generatedPassword,
@@ -98,6 +107,38 @@ describe("prepareAccountCreation", () => {
       ),
     ).rejects.toMatchObject({ code: "INVALID_ACCOUNT_INPUT" });
     expect(didHash).toBe(false);
+  });
+
+  it("requires an operations team for every operations department account", async () => {
+    await expect(
+      prepareAccountCreation(
+        superAdmin,
+        {
+          name: "运营新人",
+          username: "ops.new",
+          role: "EMPLOYEE",
+          departmentId: operationsDepartmentId,
+          isOperationsDepartment: true,
+          operationsTeam: null,
+        },
+        dependencies(),
+      ),
+    ).rejects.toMatchObject({ code: "OPERATIONS_TEAM_REQUIRED" });
+
+    await expect(
+      prepareAccountCreation(
+        superAdmin,
+        {
+          name: "运营二组新人",
+          username: "ops.team.two",
+          role: "EMPLOYEE",
+          departmentId: operationsDepartmentId,
+          isOperationsDepartment: true,
+          operationsTeam: "TEAM_TWO",
+        },
+        dependencies(),
+      ),
+    ).resolves.toMatchObject({ account: { operationsTeam: "TEAM_TWO" } });
   });
 });
 

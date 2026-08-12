@@ -24,7 +24,11 @@ const statusSchema = z.object({
   departmentId: z.uuid(),
   nextIsActive: z.enum(["true", "false"]),
 });
-const transferSchema = z.object({ memberId: z.string().min(1), departmentId: z.uuid() });
+const transferSchema = z.object({
+  memberId: z.string().min(1),
+  departmentId: z.uuid(),
+  operationsTeam: z.string().nullable(),
+});
 
 export async function createDepartmentAction(
   _state: DepartmentActionState,
@@ -79,6 +83,7 @@ export async function transferDepartmentMemberAction(
   const parsed = transferSchema.safeParse({
     memberId: formData.get("memberId"),
     departmentId: formData.get("departmentId"),
+    operationsTeam: optionalString(formData.get("operationsTeam")),
   });
   if (!parsed.success) return invalidInput();
   try {
@@ -86,10 +91,11 @@ export async function transferDepartmentMemberAction(
       actor,
       parsed.data.memberId,
       parsed.data.departmentId,
+      parsed.data.operationsTeam,
     );
     revalidatePath("/departments");
     revalidatePath("/accounts");
-    return { status: "success", message: "员工已调动，部门群访问范围已同步更新。" };
+    return { status: "success", message: "员工归属已更新，群聊访问范围已同步生效。" };
   } catch (error) {
     return actionError(error);
   }
@@ -97,7 +103,16 @@ export async function transferDepartmentMemberAction(
 
 async function currentActor(): Promise<Actor> {
   const user = await requireCurrentUser();
-  return { id: user.id, role: user.role, departmentId: user.department?.id ?? null };
+  return {
+    id: user.id,
+    role: user.role,
+    departmentId: user.department?.id ?? null,
+    operationsTeam: user.operationsTeam,
+  };
+}
+
+function optionalString(value: FormDataEntryValue | null) {
+  return typeof value === "string" && value ? value : null;
 }
 
 function invalidInput(): DepartmentActionState {
@@ -111,6 +126,7 @@ function actionError(error: unknown): DepartmentActionState {
       DEPARTMENT_OPERATION_FORBIDDEN: "你没有权限维护部门结构。",
       MEMBER_OPERATION_FORBIDDEN: "你没有权限调动这名员工。",
       MEMBER_ALREADY_IN_DEPARTMENT: "该员工已经属于目标部门。",
+      OPERATIONS_TEAM_REQUIRED: "调入运营部时必须选择运营一组或运营二组。",
     };
     return { status: "error", message: messages[error.code] };
   }
