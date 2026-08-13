@@ -114,6 +114,10 @@ export function createPrismaTaskStore(database: PrismaClient) {
     async listTasks(actor: Actor, status?: TaskStatus) {
       const tasks = await database.task.findMany({
         where: {
+          project: {
+            status: { not: "ARCHIVED" },
+            sourceBusinessModel: { status: { not: "DELETED" } },
+          },
           ...(status ? { status } : {}),
           ...(actor.role === "SUPER_ADMIN" ? {} : { OR: [{ assigneeId: actor.id }, { assignedById: actor.id }] }),
         },
@@ -178,6 +182,8 @@ async function assertProjectAccess(database: PrismaClient, actor: Actor, project
   const project = await database.project.findFirst({
     where: {
       id: projectId,
+      status: { not: "ARCHIVED" },
+      sourceBusinessModel: { status: { not: "DELETED" } },
       ...(actor.role === "SUPER_ADMIN" ? {} : { members: { some: { userId: actor.id, removedAt: null } } }),
     },
     select: { id: true },

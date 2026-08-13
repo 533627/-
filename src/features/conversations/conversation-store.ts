@@ -120,7 +120,13 @@ export function createPrismaConversationStore(database: PrismaClient) {
 
     async sendProject(actor: Actor, projectId: string, rawContent: unknown) {
       const conversation = await database.projectConversation.findUnique({
-        where: { projectId },
+        where: {
+          projectId,
+          project: {
+            status: { not: "ARCHIVED" },
+            sourceBusinessModel: { status: { not: "DELETED" } },
+          },
+        },
         select: { id: true, project: { select: { members: { where: { userId: actor.id, removedAt: null }, select: { id: true } } } } },
       });
       if (!conversation) throw new ConversationStoreError("CONVERSATION_NOT_FOUND");
