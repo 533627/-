@@ -4,6 +4,7 @@ import { Prisma, type PrismaClient } from "@/generated/prisma/client";
 import {
   assertAccountStatusChange,
   assertCanManageAccount,
+  shouldRevokeSessionsAfterReset,
 } from "@/features/accounts/account-management";
 import { hasCapability } from "@/lib/authz/permissions";
 import type { Actor, OperationsTeam, Role } from "@/lib/authz/types";
@@ -194,7 +195,9 @@ export function createPrismaAccountStore(database: PrismaClient) {
             },
           });
         }
-        await transaction.session.deleteMany({ where: { userId: target.id } });
+        if (shouldRevokeSessionsAfterReset(actor, target.id)) {
+          await transaction.session.deleteMany({ where: { userId: target.id } });
+        }
         return { id: target.id, username: target.username };
       });
     },

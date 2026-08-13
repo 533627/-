@@ -34,14 +34,14 @@ export function ProfileSettings({
       const result = await authClient.changePassword({
         currentPassword,
         newPassword,
-        revokeOtherSessions: true,
+        revokeOtherSessions: false,
       });
       if (result.error) {
         setMessage("当前密码不正确，或新密码不符合要求。");
         return;
       }
       form.reset();
-      setMessage("密码修改成功，其他设备上的登录已经退出。");
+      setMessage("密码修改成功，下次登录请使用新密码；当前页面保持登录。 ");
       router.refresh();
     } catch {
       setMessage("暂时无法修改密码，请稍后重试。");
@@ -66,7 +66,7 @@ export function ProfileSettings({
         <div className="mb-5">
           <h2 className="text-lg font-semibold">修改我的密码</h2>
           <p className="mt-1 text-sm text-base-content/60">
-            新密码至少 12 位。修改后，其他设备上的会话会被退出。
+            新密码至少 12 位。修改成功后当前页面不会退出，下次登录使用新密码。
           </p>
         </div>
         <div className="grid gap-4 sm:grid-cols-2">

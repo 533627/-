@@ -133,6 +133,21 @@ describeWithDatabase.sequential("account management database operations", () => 
     ).resolves.toBe(0);
   });
 
+  it("keeps the current administrator signed in when resetting their own password", async () => {
+    const nextHash = await hashPassword("OwnerResetPassword_2026");
+    await database.session.create({ data: session(ownerId, "self-reset") });
+
+    await store.resetPassword(
+      { id: ownerId, role: "SUPER_ADMIN", departmentId: null },
+      ownerId,
+      nextHash,
+    );
+
+    await expect(
+      database.session.count({ where: { userId: ownerId } }),
+    ).resolves.toBe(1);
+  });
+
   it("rejects an operations administrator targeting a highest administrator", async () => {
     await expect(
       store.resetPassword(

@@ -105,7 +105,10 @@ export async function resetAccountPasswordAction(
     revalidatePath("/accounts");
     return {
       status: "success",
-      message: "密码已重置，旧登录会话已全部退出。",
+      message:
+        target.id === actor.id
+          ? "新密码已生效。当前页面会继续保持登录，请先保存密码再关闭窗口。"
+          : "密码已重置，该员工的旧登录会话已全部退出。",
       credentials: { username: target.username, password: prepared.password },
     };
   } catch (error) {

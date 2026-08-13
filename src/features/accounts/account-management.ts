@@ -154,6 +154,10 @@ export function assertCanManageAccount(
   }
 }
 
+export function shouldRevokeSessionsAfterReset(actor: Actor, targetId: string) {
+  return actor.id !== targetId;
+}
+
 function assertGeneratedPassword(password: string) {
   if (password.length < 12 || password.length > 128) {
     throw new AccountManagementError("INVALID_GENERATED_PASSWORD");

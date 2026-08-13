@@ -12,6 +12,7 @@ export function OneTimeCredentials({
   presentation?: "inline" | "modal";
 }) {
   const [copyMessage, setCopyMessage] = useState<string | null>(null);
+  const [hasConfirmedSave, setHasConfirmedSave] = useState(false);
   const dialogRef = useRef<HTMLDialogElement>(null);
 
   useEffect(() => {
@@ -37,7 +38,7 @@ export function OneTimeCredentials({
     >
       <p className="text-lg font-semibold">新密码已经生成</p>
       <p className="mt-2 text-sm leading-6 text-base-content/65">
-        请立即复制并妥善保存。关闭此窗口或刷新页面后，系统无法再次显示这串密码。
+        新密码已经生效。请先复制并妥善保存；关闭或刷新后，系统无法再次显示。
       </p>
       <dl className="mt-3 grid gap-3 text-sm">
         <div className="grid gap-2 sm:grid-cols-[5rem_1fr_auto] sm:items-center">
@@ -81,7 +82,18 @@ export function OneTimeCredentials({
       <div className="modal-box max-w-xl">
         {content}
         <form className="modal-action" method="dialog">
-          <button className="btn" type="submit">我已保存，关闭</button>
+          <label className="mr-auto flex cursor-pointer items-center gap-2 text-sm">
+            <input
+              checked={hasConfirmedSave}
+              className="checkbox checkbox-sm"
+              onChange={(event) => setHasConfirmedSave(event.target.checked)}
+              type="checkbox"
+            />
+            我已保存账号和新密码
+          </label>
+          <button className="btn" disabled={!hasConfirmedSave} type="submit">
+            确认保存并关闭
+          </button>
         </form>
       </div>
     </dialog>

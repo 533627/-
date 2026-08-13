@@ -5,6 +5,7 @@ import {
   prepareAccountCreation,
   preparePasswordReset,
   prepareUsernameChange,
+  shouldRevokeSessionsAfterReset,
 } from "@/features/accounts/account-management";
 
 const operationsDepartmentId = "00000000-0000-4000-8000-000000000001";
@@ -144,6 +145,11 @@ describe("prepareAccountCreation", () => {
 });
 
 describe("account mutations", () => {
+  it("keeps the active session when an administrator resets their own password", () => {
+    expect(shouldRevokeSessionsAfterReset(superAdmin, superAdmin.id)).toBe(false);
+    expect(shouldRevokeSessionsAfterReset(superAdmin, "employee-1")).toBe(true);
+  });
+
   it("normalizes a managed username change and keeps the internal email in sync", () => {
     expect(
       prepareUsernameChange(superAdmin, {
