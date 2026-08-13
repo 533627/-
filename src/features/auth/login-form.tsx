@@ -76,7 +76,7 @@ export function LoginForm() {
           disabled={isPending}
           id="password"
           maxLength={128}
-          minLength={12}
+          minLength={8}
           name="password"
           required
           type="password"
