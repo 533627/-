@@ -25,8 +25,8 @@ export default async function LoginPage() {
   }
 
   return (
-    <main className="grid min-h-[100dvh] bg-base-200 lg:grid-cols-[0.9fr_1.1fr]">
-      <aside className="hidden bg-neutral p-10 text-neutral-content lg:flex lg:flex-col lg:justify-between xl:p-14">
+    <main className="grid min-h-[100dvh] bg-[#12120f] lg:grid-cols-[1.15fr_0.85fr]">
+      <aside className="relative hidden overflow-hidden bg-[#12120f] p-10 text-white lg:flex lg:flex-col lg:justify-between xl:p-14">
         <div className="flex items-center gap-3">
           <Image alt="" aria-hidden="true" className="size-12 object-contain" height={48} src="/brand-logo.png" width={48} />
           <div>
@@ -37,14 +37,15 @@ export default async function LoginPage() {
           </div>
         </div>
 
-        <div className="max-w-lg">
-          <h2 className="text-4xl font-semibold leading-tight tracking-tight xl:text-5xl">
-            把好项目变成清晰的下一步。
+        <div className="relative z-10 max-w-2xl">
+          <p className="mb-5 text-xs font-semibold tracking-[0.24em] text-white/40">ECOMMERCE OPERATIONS OS</p>
+          <h2 className="text-6xl font-black leading-[0.9] tracking-[-0.07em] xl:text-8xl">
+            把好项目，<br />变成下一步。
           </h2>
           <ol className="mt-10 grid gap-4" aria-label="平台工作闭环">
             {workflow.map((item, index) => (
               <li
-                className="grid grid-cols-[2rem_1fr] items-center border-b border-neutral-content/15 pb-4"
+                className="grid grid-cols-[2rem_1fr] items-center border-b border-white/15 pb-4"
                 key={item}
               >
                 <span className="text-sm tabular-nums text-neutral-content/45">
@@ -56,12 +57,17 @@ export default async function LoginPage() {
           </ol>
         </div>
 
+        <div aria-hidden="true" className="absolute -right-16 top-[18%] grid rotate-6 grid-cols-2 gap-2 opacity-90">
+          <span className="block h-44 w-44 bg-[#e7e1c7]" /><span className="block h-44 w-44 bg-[#f06445]" />
+          <span className="block h-44 w-44 bg-[#3568e8]" /><span className="block h-44 w-44 bg-[#a7b85d]" />
+        </div>
+
         <p className="max-w-md text-sm leading-6 text-neutral-content/60">
           账号由最高管理员或运营组长统一发放。终端不开放公开注册。
         </p>
       </aside>
 
-      <section className="flex items-center justify-center px-4 py-10 sm:px-8">
+      <section className="flex items-center justify-center bg-[#e7e1c7] px-4 py-10 text-[#12120f] sm:px-8">
         <div className="w-full max-w-md">
           <div className="mb-10 flex items-center gap-3 lg:hidden">
             <Image alt="" aria-hidden="true" className="size-10 object-contain" height={40} src="/brand-logo.png" width={40} />
@@ -71,13 +77,13 @@ export default async function LoginPage() {
             </div>
           </div>
 
-          <div className="card card-border bg-base-100">
-            <div className="card-body p-6 sm:p-8">
+          <div className="border-t-4 border-[#12120f] bg-transparent">
+            <div className="p-1 pt-7 sm:p-2 sm:pt-8">
               <div>
                 <p className="text-sm font-medium text-base-content/60">
                   欢迎回来
                 </p>
-                <h1 className="mt-2 text-3xl font-semibold tracking-tight">
+                <h1 className="mt-2 text-4xl font-black tracking-[-0.05em]">
                   登录商序终端
                 </h1>
                 <p className="mt-3 leading-6 text-base-content/65">

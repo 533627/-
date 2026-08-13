@@ -31,7 +31,7 @@ export function WorkspaceNavigation({
   const pathname = usePathname();
 
   return (
-    <ul className="menu menu-md w-full gap-1.5 p-0" aria-label="工作区导航">
+    <ul className="menu menu-md w-full gap-1 p-0" aria-label="工作区导航">
       {items.map((item) => {
         const isActive =
           item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
@@ -42,8 +42,8 @@ export function WorkspaceNavigation({
               aria-current={isActive ? "page" : undefined}
               className={
                 isActive
-                  ? "menu-active gap-3 bg-primary! px-3 py-2.5 font-medium text-primary-content!"
-                  : "gap-3 px-3 py-2.5 text-neutral-content/70 hover:bg-neutral-content/8 hover:text-neutral-content"
+                  ? "menu-active gap-3 bg-[#e7e1c7]! px-3 py-3 font-semibold text-[#12120f]!"
+                  : "gap-3 px-3 py-3 text-neutral-content/60 hover:bg-neutral-content/8 hover:text-neutral-content"
               }
               href={item.href}
               onClick={() => {
@@ -57,8 +57,8 @@ export function WorkspaceNavigation({
                 aria-hidden="true"
                 className={
                   isActive
-                    ? "grid size-7 place-items-center rounded-selector bg-primary-content/14 text-xs"
-                    : "grid size-7 place-items-center rounded-selector bg-neutral-content/8 text-xs text-neutral-content/65"
+                    ? "grid size-7 place-items-center rounded-sm bg-[#12120f]/10 text-xs"
+                    : "grid size-7 place-items-center rounded-sm border border-neutral-content/12 text-xs text-neutral-content/55"
                 }
               >
                 {item.marker}

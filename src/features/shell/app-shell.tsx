@@ -39,7 +39,7 @@ export async function AppShell({
         type="checkbox"
       />
       <div className="drawer-content min-w-0">
-        <header className="navbar sticky top-0 z-10 min-h-16 border-b border-base-content/15 bg-base-100 px-4 lg:px-8">
+        <header className="navbar sticky top-0 z-10 min-h-16 border-b border-base-content/12 bg-base-100/95 px-4 backdrop-blur lg:px-8">
           <div className="navbar-start gap-3">
             <WorkspaceDrawerButton />
             <div className="lg:hidden">
@@ -76,7 +76,7 @@ export async function AppShell({
           className="drawer-overlay"
           htmlFor="workspace-drawer"
         />
-        <aside className="flex min-h-full w-72 flex-col bg-neutral p-4 text-neutral-content">
+        <aside className="flex min-h-full w-72 flex-col bg-[#12120f] p-4 text-neutral-content">
           <Brand />
           <nav aria-label="主导航" className="mt-7 grow">
             <WorkspaceNavigation items={navigation} />
@@ -87,7 +87,7 @@ export async function AppShell({
               @{user.username}
             </p>
             <div className="mt-3 flex flex-wrap gap-2">
-              <span className="badge badge-sm border-0 bg-primary text-primary-content">{ROLE_LABELS[user.role]}</span>
+              <span className="badge badge-sm border-0 bg-[#f06445] text-[#12120f]">{ROLE_LABELS[user.role]}</span>
               <span className="badge badge-sm border-neutral-content/15 bg-transparent text-neutral-content/70">
                 {user.department?.name ?? "全公司"}
               </span>
