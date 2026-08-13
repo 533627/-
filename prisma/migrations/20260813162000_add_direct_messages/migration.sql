@@ -1,6 +1,6 @@
-ALTER TYPE "NotificationType" ADD VALUE 'DIRECT_MESSAGE';
+ALTER TYPE "NotificationType" ADD VALUE IF NOT EXISTS 'DIRECT_MESSAGE';
 
-CREATE TABLE "direct_messages" (
+CREATE TABLE IF NOT EXISTS "direct_messages" (
     "id" UUID NOT NULL,
     "senderId" TEXT NOT NULL,
     "recipientId" TEXT NOT NULL,
@@ -10,8 +10,17 @@ CREATE TABLE "direct_messages" (
     CONSTRAINT "direct_messages_pkey" PRIMARY KEY ("id")
 );
 
-CREATE INDEX "direct_messages_senderId_recipientId_createdAt_idx" ON "direct_messages"("senderId", "recipientId", "createdAt");
-CREATE INDEX "direct_messages_recipientId_readAt_createdAt_idx" ON "direct_messages"("recipientId", "readAt", "createdAt");
+CREATE INDEX IF NOT EXISTS "direct_messages_senderId_recipientId_createdAt_idx" ON "direct_messages"("senderId", "recipientId", "createdAt");
+CREATE INDEX IF NOT EXISTS "direct_messages_recipientId_readAt_createdAt_idx" ON "direct_messages"("recipientId", "readAt", "createdAt");
 
-ALTER TABLE "direct_messages" ADD CONSTRAINT "direct_messages_senderId_fkey" FOREIGN KEY ("senderId") REFERENCES "user"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-ALTER TABLE "direct_messages" ADD CONSTRAINT "direct_messages_recipientId_fkey" FOREIGN KEY ("recipientId") REFERENCES "user"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'direct_messages_senderId_fkey') THEN
+    ALTER TABLE "direct_messages" ADD CONSTRAINT "direct_messages_senderId_fkey" FOREIGN KEY ("senderId") REFERENCES "user"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'direct_messages_recipientId_fkey') THEN
+    ALTER TABLE "direct_messages" ADD CONSTRAINT "direct_messages_recipientId_fkey" FOREIGN KEY ("recipientId") REFERENCES "user"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+  END IF;
+END $$;

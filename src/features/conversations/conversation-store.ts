@@ -76,12 +76,6 @@ export function createPrismaConversationStore(database: PrismaClient) {
           username: true,
           role: true,
           department: { select: { name: true } },
-          receivedDirectMessages: {
-            where: { senderId: actor.id },
-            orderBy: { createdAt: "desc" },
-            take: 1,
-            select: { createdAt: true },
-          },
           sentDirectMessages: {
             where: { recipientId: actor.id, readAt: null },
             select: { id: true },
