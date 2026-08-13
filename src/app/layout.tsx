@@ -18,7 +18,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="zh-CN" data-theme="corporate">
+    <html lang="zh-CN" data-theme="commerce">
       <body className="antialiased">{children}</body>
     </html>
   );

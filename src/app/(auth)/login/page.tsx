@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import { redirect } from "next/navigation";
 
 import { getCurrentUser } from "@/features/auth/current-user-server";
@@ -27,12 +28,7 @@ export default async function LoginPage() {
     <main className="grid min-h-[100dvh] bg-base-200 lg:grid-cols-[0.9fr_1.1fr]">
       <aside className="hidden bg-neutral p-10 text-neutral-content lg:flex lg:flex-col lg:justify-between xl:p-14">
         <div className="flex items-center gap-3">
-          <span
-            aria-hidden="true"
-            className="grid size-11 place-items-center rounded-field bg-neutral-content font-semibold text-neutral"
-          >
-            商
-          </span>
+          <Image alt="" aria-hidden="true" className="size-12 object-contain" height={48} src="/brand-logo.png" width={48} />
           <div>
             <p className="font-semibold">{appConfig.name}</p>
             <p className="mt-1 text-sm text-neutral-content/65">
@@ -68,12 +64,7 @@ export default async function LoginPage() {
       <section className="flex items-center justify-center px-4 py-10 sm:px-8">
         <div className="w-full max-w-md">
           <div className="mb-10 flex items-center gap-3 lg:hidden">
-            <span
-              aria-hidden="true"
-              className="grid size-10 place-items-center rounded-field bg-neutral font-semibold text-neutral-content"
-            >
-              商
-            </span>
+            <Image alt="" aria-hidden="true" className="size-10 object-contain" height={40} src="/brand-logo.png" width={40} />
             <div>
               <p className="font-semibold">{appConfig.name}</p>
               <p className="text-xs text-base-content/60">公司内部运营平台</p>

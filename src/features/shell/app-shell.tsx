@@ -1,4 +1,6 @@
 import type { ReactNode } from "react";
+import Image from "next/image";
+import Link from "next/link";
 
 import { appConfig } from "@/lib/app-config";
 import type { CurrentUser } from "@/features/auth/current-user";
@@ -34,7 +36,7 @@ export function AppShell({
         type="checkbox"
       />
       <div className="drawer-content min-w-0">
-        <header className="navbar sticky top-0 z-10 min-h-16 border-b border-base-300/70 bg-base-100/95 px-4 lg:px-8">
+        <header className="navbar sticky top-0 z-10 min-h-16 border-b border-base-content/15 bg-base-100 px-4 lg:px-8">
           <div className="navbar-start gap-3">
             <WorkspaceDrawerButton />
             <div className="lg:hidden">
@@ -83,6 +85,9 @@ export function AppShell({
                 {user.department?.name ?? "全公司"}
               </span>
             </div>
+            <Link className="btn btn-ghost btn-sm btn-block mt-3" href="/profile">
+              个人设置
+            </Link>
             <LogoutButton />
           </div>
         </aside>
@@ -94,12 +99,7 @@ export function AppShell({
 function Brand() {
   return (
     <div className="flex items-center gap-3 px-2 pt-1">
-      <span
-        aria-hidden="true"
-        className="grid size-10 place-items-center rounded-field bg-primary font-bold text-primary-content"
-      >
-        商
-      </span>
+      <Image alt="" aria-hidden="true" className="size-10 object-contain" height={40} src="/brand-logo.png" width={40} />
       <div>
         <p className="font-semibold leading-tight text-neutral-content">{appConfig.name}</p>
         <p className="mt-1 text-xs text-neutral-content/50">电商项目指挥台</p>
