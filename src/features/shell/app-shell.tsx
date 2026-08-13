@@ -6,6 +6,8 @@ import { appConfig } from "@/lib/app-config";
 import type { CurrentUser } from "@/features/auth/current-user";
 import { LogoutButton } from "@/features/auth/logout-button";
 import { getNavigationForRole } from "@/features/shell/navigation";
+import { createPrismaNotificationStore } from "@/features/notifications/notification-store";
+import { getDatabase } from "@/lib/db";
 import {
   WorkspaceDrawerButton,
   WorkspaceNavigation,
@@ -18,7 +20,7 @@ const ROLE_LABELS = {
   EMPLOYEE: "员工",
 } as const;
 
-export function AppShell({
+export async function AppShell({
   children,
   user,
 }: {
@@ -26,6 +28,7 @@ export function AppShell({
   user: CurrentUser;
 }) {
   const navigation = getNavigationForRole(user.role);
+  const unreadCount = await createPrismaNotificationStore(getDatabase()).unreadCount(user.id);
 
   return (
     <div className="drawer min-h-[100dvh] bg-base-200 lg:drawer-open">
@@ -47,6 +50,10 @@ export function AppShell({
             </div>
           </div>
           <div className="navbar-end gap-3">
+            <Link className="btn btn-ghost btn-sm relative" href="/notifications">
+              消息
+              {unreadCount ? <span className="badge badge-primary badge-sm">{unreadCount > 99 ? "99+" : unreadCount}</span> : null}
+            </Link>
             <div className="hidden text-right sm:block">
               <p className="text-sm font-semibold">{user.name}</p>
               <p className="text-xs text-base-content/55">{ROLE_LABELS[user.role]}</p>

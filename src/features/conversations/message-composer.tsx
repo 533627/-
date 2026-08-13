@@ -7,7 +7,7 @@ import { sendConversationMessageAction, type ConversationActionState } from "@/f
 
 const initialState: ConversationActionState = { status: "idle" };
 
-export function MessageComposer({ kind, conversationId, operationsTeam = null }: { kind: "department" | "project"; conversationId: string; operationsTeam?: "TEAM_ONE" | "TEAM_TWO" | null }) {
+export function MessageComposer({ kind, conversationId, operationsTeam = null }: { kind: "department" | "project" | "direct"; conversationId: string; operationsTeam?: "TEAM_ONE" | "TEAM_TWO" | null }) {
   const [state, action] = useActionState(sendConversationMessageAction, initialState);
   const formRef = useRef<HTMLFormElement>(null);
   useEffect(() => { if (state.status === "success") formRef.current?.reset(); }, [state]);

@@ -6,6 +6,7 @@ import {
 } from "@/lib/authz/permissions";
 import type { Actor, OperationsTeam } from "@/lib/authz/types";
 import { prepareConversationMessage } from "@/features/conversations/conversation-management";
+import { assertDirectMessageTarget } from "@/features/conversations/direct-message-management";
 
 export class ConversationStoreError extends Error {
   constructor(public readonly code: "CONVERSATION_NOT_FOUND" | "CONVERSATION_FORBIDDEN") {
@@ -62,6 +63,75 @@ export function createPrismaConversationStore(database: PrismaClient) {
         })));
       }
       return { departments: visibleDepartments, projects: projects.filter((project) => project.conversation) };
+    },
+
+    async listDirectContacts(actor: Actor) {
+      return database.user.findMany({
+        where: { id: { not: actor.id }, isActive: true },
+        orderBy: [{ department: { name: "asc" } }, { name: "asc" }],
+        take: 500,
+        select: {
+          id: true,
+          name: true,
+          username: true,
+          role: true,
+          department: { select: { name: true } },
+          receivedDirectMessages: {
+            where: { senderId: actor.id },
+            orderBy: { createdAt: "desc" },
+            take: 1,
+            select: { createdAt: true },
+          },
+          sentDirectMessages: {
+            where: { recipientId: actor.id, readAt: null },
+            select: { id: true },
+          },
+        },
+      });
+    },
+
+    async getDirect(actor: Actor, contactId: string) {
+      const contact = await database.user.findUnique({
+        where: { id: contactId },
+        select: { id: true, name: true, username: true, isActive: true, department: { select: { name: true } } },
+      });
+      if (!contact) throw new ConversationStoreError("CONVERSATION_NOT_FOUND");
+      try {
+        assertDirectMessageTarget(actor.id, contact);
+      } catch {
+        throw new ConversationStoreError("CONVERSATION_FORBIDDEN");
+      }
+      const messages = await database.$transaction(async (transaction) => {
+        await transaction.directMessage.updateMany({
+          where: { senderId: contact.id, recipientId: actor.id, readAt: null },
+          data: { readAt: new Date() },
+        });
+        await transaction.notification.updateMany({
+          where: { recipientId: actor.id, type: "DIRECT_MESSAGE", resourceId: contact.id, isRead: false },
+          data: { isRead: true, readAt: new Date() },
+        });
+        return transaction.directMessage.findMany({
+          where: {
+            OR: [
+              { senderId: actor.id, recipientId: contact.id },
+              { senderId: contact.id, recipientId: actor.id },
+            ],
+          },
+          orderBy: { createdAt: "desc" },
+          take: 100,
+          select: {
+            id: true, content: true, createdAt: true, senderId: true,
+            sender: { select: { id: true, name: true } },
+          },
+        });
+      });
+      return {
+        kind: "direct" as const,
+        id: contact.id,
+        name: contact.name,
+        subtitle: `${contact.department?.name ?? "全公司"} · @${contact.username ?? contact.name}`,
+        messages: messages.reverse().map((message) => ({ ...message, authorId: message.senderId, author: message.sender })),
+      };
     },
 
     async getDepartment(actor: Actor, departmentId: string, operationsTeam: OperationsTeam | null = null) {
@@ -133,6 +203,35 @@ export function createPrismaConversationStore(database: PrismaClient) {
       if (!canAccessProjectConversation(actor, conversation.project.members.length > 0)) throw new ConversationStoreError("CONVERSATION_FORBIDDEN");
       const content = prepareConversationMessage(rawContent);
       return database.projectMessage.create({ data: { conversationId: conversation.id, authorId: actor.id, content } });
+    },
+
+    async sendDirect(actor: Actor, recipientId: string, rawContent: unknown) {
+      const content = prepareConversationMessage(rawContent);
+      return database.$transaction(async (transaction) => {
+        const target = await transaction.user.findUnique({
+          where: { id: recipientId },
+          select: { id: true, name: true, isActive: true },
+        });
+        if (!target) throw new ConversationStoreError("CONVERSATION_NOT_FOUND");
+        try {
+          assertDirectMessageTarget(actor.id, target);
+        } catch {
+          throw new ConversationStoreError("CONVERSATION_FORBIDDEN");
+        }
+        const message = await transaction.directMessage.create({
+          data: { senderId: actor.id, recipientId: target.id, content },
+        });
+        await transaction.notification.create({
+          data: {
+            recipientId: target.id,
+            type: "DIRECT_MESSAGE",
+            title: "收到新的私聊消息",
+            message: content.length > 80 ? `${content.slice(0, 80)}…` : content,
+            resourceId: actor.id,
+          },
+        });
+        return message;
+      });
     },
   };
 }

@@ -10,9 +10,12 @@ export default async function ConversationsPage({ searchParams }: { searchParams
   const user = await requireCurrentUser();
   const actor: Actor = { id: user.id, role: user.role, departmentId: user.department?.id ?? null, operationsTeam: user.operationsTeam };
   const store = createPrismaConversationStore(getDatabase());
-  const groups = await store.list(actor);
+  const [groups, directContacts] = await Promise.all([
+    store.list(actor),
+    store.listDirectContacts(actor),
+  ]);
   const query = await searchParams;
-  const requestedKind = query.kind === "project" ? "project" : "department";
+  const requestedKind = query.kind === "project" ? "project" : query.kind === "direct" ? "direct" : "department";
   const requestedId = typeof query.id === "string" ? query.id : undefined;
   const requestedTeam = parseOperationsTeam(query.team);
   const fallback = groups.departments[0]
@@ -23,7 +26,7 @@ export default async function ConversationsPage({ searchParams }: { searchParams
   const selected = requestedId ? { kind: requestedKind, id: requestedId, operationsTeam: requestedKind === "department" ? requestedTeam : null } : fallback;
   let conversation = null;
   if (selected) {
-    try { conversation = selected.kind === "project" ? await store.getProject(actor, selected.id) : await store.getDepartment(actor, selected.id, selected.operationsTeam); }
+    try { conversation = selected.kind === "project" ? await store.getProject(actor, selected.id) : selected.kind === "direct" ? await store.getDirect(actor, selected.id) : await store.getDepartment(actor, selected.id, selected.operationsTeam); }
     catch (error) { if (!(error instanceof ConversationStoreError)) throw error; }
   }
 
@@ -33,6 +36,7 @@ export default async function ConversationsPage({ searchParams }: { searchParams
       <aside className="border-b border-base-300 bg-base-200/50 p-3 lg:border-r lg:border-b-0" aria-label="群聊列表">
         <GroupSection title="部门群">{groups.departments.map((department) => { const params = new URLSearchParams({ kind: "department", id: department.id }); if (department.operationsTeam) params.set("team", department.operationsTeam); return <GroupLink active={conversation?.kind === "department" && conversation.id === department.id && conversation.operationsTeam === department.operationsTeam} href={`/conversations?${params.toString()}`} key={`${department.id}-${department.operationsTeam ?? "department"}`} label={department.name} meta={department.operationsTeam ? "运营内部群" : "部门群"} />; })}</GroupSection>
         <GroupSection title="项目群">{groups.projects.map((project) => <GroupLink active={conversation?.kind === "project" && conversation.id === project.id} href={`/conversations?kind=project&id=${project.id}`} key={project.id} label={project.name} meta="项目协作" />)}</GroupSection>
+        <GroupSection title="员工私聊">{directContacts.map((contact) => <GroupLink active={conversation?.kind === "direct" && conversation.id === contact.id} badge={contact.sentDirectMessages.length} href={`/conversations?kind=direct&id=${contact.id}`} key={contact.id} label={contact.name} meta={`${contact.department?.name ?? "全公司"} · @${contact.username ?? "未设置"}`} />)}</GroupSection>
       </aside>
       {conversation ? <section className="flex min-h-[38rem] min-w-0 flex-col" aria-labelledby="conversation-title">
         <header className="border-b border-base-300 px-4 py-3 sm:px-5"><h2 className="font-semibold" id="conversation-title">{conversation.name}</h2><p className="text-xs text-base-content/55">{conversation.subtitle}</p></header>
@@ -46,6 +50,6 @@ export default async function ConversationsPage({ searchParams }: { searchParams
 }
 
 function GroupSection({ title, children }: { title: string; children: React.ReactNode }) { return <section className="mb-5"><h2 className="px-2 pb-2 text-xs font-semibold uppercase tracking-wider text-base-content/50">{title}</h2><div className="space-y-1">{children}</div></section>; }
-function GroupLink({ active, href, label, meta }: { active: boolean; href: string; label: string; meta: string }) { return <Link aria-current={active ? "page" : undefined} className={`block rounded-field px-3 py-2.5 ${active ? "bg-base-100 font-medium" : "hover:bg-base-100/70"}`} href={href}><span className="block truncate text-sm">{label}</span><span className="mt-0.5 block text-xs text-base-content/45">{meta}</span></Link>; }
+function GroupLink({ active, href, label, meta, badge = 0 }: { active: boolean; href: string; label: string; meta: string; badge?: number }) { return <Link aria-current={active ? "page" : undefined} className={`block rounded-field px-3 py-2.5 ${active ? "bg-base-100 font-medium" : "hover:bg-base-100/70"}`} href={href}><span className="flex items-center gap-2"><span className="min-w-0 grow truncate text-sm">{label}</span>{badge ? <span className="badge badge-primary badge-sm" aria-label={`${badge} 条未读消息`}>{badge}</span> : null}</span><span className="mt-0.5 block truncate text-xs text-base-content/45">{meta}</span></Link>; }
 function formatTime(date: Date) { return new Intl.DateTimeFormat("zh-CN", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit", timeZone: "Asia/Shanghai" }).format(date); }
 function parseOperationsTeam(value: string | string[] | undefined): OperationsTeam | null { return typeof value === "string" && OPERATIONS_TEAMS.includes(value as OperationsTeam) ? value as OperationsTeam : null; }

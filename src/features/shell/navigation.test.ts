@@ -15,6 +15,7 @@ describe("role-aware workspace navigation", () => {
       "/projects",
       "/tasks",
       "/conversations",
+      "/notifications",
       "/accounts",
       "/departments",
       "/audit",
@@ -39,6 +40,7 @@ describe("role-aware workspace navigation", () => {
       "/projects",
       "/tasks",
       "/conversations",
+      "/notifications",
     ]);
   });
 

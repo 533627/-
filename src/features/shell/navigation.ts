@@ -60,6 +60,14 @@ const WORKSPACE_NAVIGATION = [
     capability: "DEPARTMENT_CONVERSATION_ACCESS",
   },
   {
+    slug: "notifications",
+    href: "/notifications",
+    label: "消息提醒",
+    marker: "讯",
+    description: "查看私聊消息和业务提醒",
+    capability: "DASHBOARD_VIEW",
+  },
+  {
     slug: "accounts",
     href: "/accounts",
     label: "账号终端",

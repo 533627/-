@@ -50,6 +50,7 @@ enum ProjectRequestEventType {
 enum NotificationType {
   PROJECT_REQUEST_APPROVED
   PROJECT_REQUEST_REJECTED
+  DIRECT_MESSAGE
 }
 
 enum ProjectStatus {
@@ -152,6 +153,8 @@ model User {
   createdProjectConversations ProjectConversation[]         @relation("ProjectConversationCreatedBy")
   projectMessages             ProjectMessage[]              @relation("ProjectMessageAuthor")
   departmentMessages          DepartmentMessage[]           @relation("DepartmentMessageAuthor")
+  sentDirectMessages          DirectMessage[]                @relation("DirectMessageSender")
+  receivedDirectMessages      DirectMessage[]                @relation("DirectMessageRecipient")
   projectEvents               ProjectEvent[]                @relation("ProjectEventActor")
   assignedTasks               Task[]                        @relation("TaskAssignee")
   createdTasks                Task[]                        @relation("TaskAssignedBy")
@@ -412,6 +415,21 @@ model DepartmentMessage {
   @@index([departmentId, operationsTeam, createdAt])
   @@index([authorId])
   @@map("department_messages")
+}
+
+model DirectMessage {
+  id          String   @id @default(uuid()) @db.Uuid
+  senderId    String
+  sender      User     @relation("DirectMessageSender", fields: [senderId], references: [id], onDelete: Restrict)
+  recipientId String
+  recipient   User     @relation("DirectMessageRecipient", fields: [recipientId], references: [id], onDelete: Restrict)
+  content     String   @db.VarChar(2000)
+  createdAt   DateTime @default(now()) @db.Timestamptz(3)
+  readAt      DateTime? @db.Timestamptz(3)
+
+  @@index([senderId, recipientId, createdAt])
+  @@index([recipientId, readAt, createdAt])
+  @@map("direct_messages")
 }
 
 model ProjectRequestEvent {

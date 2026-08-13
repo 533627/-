@@ -10,7 +10,7 @@ import { getDatabase } from "@/lib/db";
 
 export type ConversationActionState = { status: "idle" | "success" | "error"; message?: string };
 const targetSchema = z.object({
-  kind: z.enum(["department", "project"]),
+  kind: z.enum(["department", "project", "direct"]),
   conversationId: z.uuid(),
   operationsTeam: z.enum(OPERATIONS_TEAMS).nullable(),
 });
@@ -27,8 +27,10 @@ export async function sendConversationMessageAction(
     const store = createPrismaConversationStore(getDatabase());
     if (target.data.kind === "department") {
       await store.sendDepartment(actor, target.data.conversationId, formData.get("content"), target.data.operationsTeam);
-    } else {
+    } else if (target.data.kind === "project") {
       await store.sendProject(actor, target.data.conversationId, formData.get("content"));
+    } else {
+      await store.sendDirect(actor, target.data.conversationId, formData.get("content"));
     }
     revalidatePath("/conversations");
     return { status: "success", message: "消息已发送。" };
