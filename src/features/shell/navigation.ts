@@ -5,6 +5,7 @@ export type WorkspaceNavigationItem = {
   slug: string;
   href: string;
   label: string;
+  marker: string;
   description: string;
   capability: Capability;
 };
@@ -14,6 +15,7 @@ const WORKSPACE_NAVIGATION = [
     slug: "home",
     href: "/",
     label: "工作台",
+    marker: "台",
     description: "查看当前职责和待推进事项",
     capability: "DASHBOARD_VIEW",
   },
@@ -21,6 +23,7 @@ const WORKSPACE_NAVIGATION = [
     slug: "business-models",
     href: "/business-models",
     label: "商业整理",
+    marker: "商",
     description: "沉淀项目逻辑和商业模式打法",
     capability: "BUSINESS_MODEL_VIEW",
   },
@@ -28,6 +31,7 @@ const WORKSPACE_NAVIGATION = [
     slug: "project-requests",
     href: "/project-requests",
     label: "立项审批",
+    marker: "审",
     description: "查看并审批运营提交的立项申请",
     capability: "PROJECT_REQUEST_REVIEW",
   },
@@ -35,6 +39,7 @@ const WORKSPACE_NAVIGATION = [
     slug: "projects",
     href: "/projects",
     label: "项目协作",
+    marker: "项",
     description: "跟进已立项项目和跨部门成员",
     capability: "PROJECT_VIEW",
   },
@@ -42,6 +47,7 @@ const WORKSPACE_NAVIGATION = [
     slug: "tasks",
     href: "/tasks",
     label: "任务待办",
+    marker: "办",
     description: "接收、提交和验收工作任务",
     capability: "TASK_EXECUTE",
   },
@@ -49,6 +55,7 @@ const WORKSPACE_NAVIGATION = [
     slug: "conversations",
     href: "/conversations",
     label: "协作群聊",
+    marker: "聊",
     description: "进入部门群和项目协作群",
     capability: "DEPARTMENT_CONVERSATION_ACCESS",
   },
@@ -56,6 +63,7 @@ const WORKSPACE_NAVIGATION = [
     slug: "accounts",
     href: "/accounts",
     label: "账号终端",
+    marker: "账",
     description: "创建、停用和重置员工账号",
     capability: "ACCOUNT_MANAGE",
   },
@@ -63,6 +71,7 @@ const WORKSPACE_NAVIGATION = [
     slug: "departments",
     href: "/departments",
     label: "部门管理",
+    marker: "部",
     description: "维护部门结构和人员归属",
     capability: "DEPARTMENT_MEMBERS_VIEW",
   },
@@ -70,6 +79,7 @@ const WORKSPACE_NAVIGATION = [
     slug: "audit",
     href: "/audit",
     label: "审计记录",
+    marker: "记",
     description: "检查关键账号和业务操作留痕",
     capability: "AUDIT_LOG_VIEW",
   },

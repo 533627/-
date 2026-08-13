@@ -34,7 +34,7 @@ export function AppShell({
         type="checkbox"
       />
       <div className="drawer-content min-w-0">
-        <header className="navbar sticky top-0 z-10 min-h-16 border-b border-base-300 bg-base-100 px-4 lg:px-8">
+        <header className="navbar sticky top-0 z-10 min-h-16 border-b border-base-300/70 bg-base-100/95 px-4 lg:px-8">
           <div className="navbar-start gap-3">
             <WorkspaceDrawerButton />
             <div className="lg:hidden">
@@ -44,14 +44,20 @@ export function AppShell({
               </p>
             </div>
           </div>
-          <div className="navbar-end hidden text-right sm:block">
-            <p className="text-sm font-medium">{user.name}</p>
-            <p className="text-xs text-base-content/60">
-              {ROLE_LABELS[user.role]}
-            </p>
+          <div className="navbar-end gap-3">
+            <div className="hidden text-right sm:block">
+              <p className="text-sm font-semibold">{user.name}</p>
+              <p className="text-xs text-base-content/55">{ROLE_LABELS[user.role]}</p>
+            </div>
+            <span
+              aria-hidden="true"
+              className="grid size-9 place-items-center rounded-full bg-primary/10 text-sm font-semibold text-primary"
+            >
+              {user.name.slice(0, 1)}
+            </span>
           </div>
         </header>
-        <main className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
+        <main className="mx-auto w-full max-w-[90rem] px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
           {children}
         </main>
       </div>
@@ -61,19 +67,19 @@ export function AppShell({
           className="drawer-overlay"
           htmlFor="workspace-drawer"
         />
-        <aside className="flex min-h-full w-72 flex-col border-r border-base-300 bg-base-100 p-4 text-base-content">
+        <aside className="flex min-h-full w-72 flex-col bg-neutral p-4 text-neutral-content">
           <Brand />
           <nav aria-label="主导航" className="mt-7 grow">
             <WorkspaceNavigation items={navigation} />
           </nav>
-          <div className="border-t border-base-300 pt-4">
+          <div className="border-t border-neutral-content/12 px-2 pt-4">
             <p className="truncate text-sm font-semibold">{user.name}</p>
-            <p className="mt-1 truncate text-xs text-base-content/60">
+            <p className="mt-1 truncate text-xs text-neutral-content/55">
               @{user.username}
             </p>
             <div className="mt-3 flex flex-wrap gap-2">
-              <span className="badge badge-sm">{ROLE_LABELS[user.role]}</span>
-              <span className="badge badge-sm badge-ghost">
+              <span className="badge badge-sm border-0 bg-primary text-primary-content">{ROLE_LABELS[user.role]}</span>
+              <span className="badge badge-sm border-neutral-content/15 bg-transparent text-neutral-content/70">
                 {user.department?.name ?? "全公司"}
               </span>
             </div>
@@ -90,13 +96,13 @@ function Brand() {
     <div className="flex items-center gap-3 px-2 pt-1">
       <span
         aria-hidden="true"
-        className="grid size-10 place-items-center rounded-field bg-neutral font-semibold text-neutral-content"
+        className="grid size-10 place-items-center rounded-field bg-primary font-bold text-primary-content"
       >
         商
       </span>
       <div>
-        <p className="font-semibold leading-tight">{appConfig.name}</p>
-        <p className="mt-1 text-xs text-base-content/60">公司内部运营平台</p>
+        <p className="font-semibold leading-tight text-neutral-content">{appConfig.name}</p>
+        <p className="mt-1 text-xs text-neutral-content/50">电商项目指挥台</p>
       </div>
     </div>
   );

@@ -1,14 +1,41 @@
 @import "tailwindcss";
 
 @plugin "daisyui" {
-  themes: corporate --default;
+  themes: commerce --default;
 }
 
 @plugin "daisyui/theme" {
-  name: "corporate";
+  name: "commerce";
   default: true;
-  --color-primary: oklch(48% 0.11 176);
-  --color-primary-content: oklch(98% 0.01 176);
+  color-scheme: light;
+  --color-base-100: oklch(99% 0.003 170);
+  --color-base-200: oklch(96.5% 0.008 170);
+  --color-base-300: oklch(91.5% 0.014 170);
+  --color-base-content: oklch(23% 0.025 170);
+  --color-primary: oklch(42% 0.095 166);
+  --color-primary-content: oklch(98% 0.008 166);
+  --color-secondary: oklch(67% 0.16 38);
+  --color-secondary-content: oklch(99% 0.005 38);
+  --color-accent: oklch(76% 0.14 75);
+  --color-accent-content: oklch(24% 0.04 75);
+  --color-neutral: oklch(27% 0.03 170);
+  --color-neutral-content: oklch(96% 0.008 170);
+  --color-info: oklch(66% 0.12 240);
+  --color-info-content: oklch(99% 0.005 240);
+  --color-success: oklch(62% 0.13 155);
+  --color-success-content: oklch(99% 0.005 155);
+  --color-warning: oklch(78% 0.14 78);
+  --color-warning-content: oklch(25% 0.04 78);
+  --color-error: oklch(62% 0.19 28);
+  --color-error-content: oklch(99% 0.005 28);
+  --radius-selector: 0.5rem;
+  --radius-field: 0.5rem;
+  --radius-box: 0.75rem;
+  --size-selector: 0.25rem;
+  --size-field: 0.25rem;
+  --border: 1px;
+  --depth: 0;
+  --noise: 0;
 }
 
 html {
@@ -17,4 +44,13 @@ html {
 
 body {
   min-height: 100dvh;
+  background: var(--color-base-200);
+  font-family:
+    "Microsoft YaHei UI", "PingFang SC", "Noto Sans CJK SC", system-ui,
+    sans-serif;
+  text-rendering: optimizeLegibility;
+}
+
+::selection {
+  background: color-mix(in oklab, var(--color-primary) 20%, transparent);
 }
