@@ -149,6 +149,52 @@ export function createPrismaBusinessModelStore(database: PrismaClient) {
             snapshot: snapshotOf(record),
           },
         });
+        if (nextStatus === "DELETED") {
+          const linkedProjects = await transaction.project.findMany({
+            where: {
+              sourceBusinessModelId: businessModelId,
+              status: { not: "ARCHIVED" },
+            },
+            select: { id: true, revision: true },
+          });
+          if (linkedProjects.length > 0) {
+            const projectIds = linkedProjects.map(({ id }) => id);
+            const conversations = await transaction.projectConversation.findMany({
+              where: { projectId: { in: projectIds } },
+              select: { id: true },
+            });
+            if (conversations.length > 0) {
+              await transaction.projectMessage.deleteMany({
+                where: {
+                  conversationId: { in: conversations.map(({ id }) => id) },
+                },
+              });
+              await transaction.projectConversation.deleteMany({
+                where: { projectId: { in: projectIds } },
+              });
+            }
+            for (const project of linkedProjects) {
+              const revision = project.revision + 1;
+              await transaction.project.update({
+                where: { id: project.id },
+                data: { status: "ARCHIVED", revision },
+              });
+              await transaction.projectEvent.create({
+                data: {
+                  projectId: project.id,
+                  actorId: actor.id,
+                  type: "STATUS_CHANGED",
+                  revision,
+                  details: {
+                    from: "SOURCE_MODEL_DELETED",
+                    to: "ARCHIVED",
+                    sourceBusinessModelId: businessModelId,
+                  },
+                },
+              });
+            }
+          }
+        }
         return record;
       });
     },

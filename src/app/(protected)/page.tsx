@@ -32,7 +32,10 @@ export default async function WorkspaceHomePage() {
         ? database.projectRequest.count({ where: { status: "PENDING" } })
         : Promise.resolve(0),
       database.project.count({
-        where: { status: { in: ["PREPARING", "IN_PROGRESS", "PAUSED"] } },
+        where: {
+          status: { in: ["PREPARING", "IN_PROGRESS", "PAUSED"] },
+          sourceBusinessModel: { status: { not: "DELETED" } },
+        },
       }),
       database.task.count({
         where: { ...taskScope, status: { in: [...OPEN_TASK_STATUSES] } },
@@ -45,7 +48,10 @@ export default async function WorkspaceHomePage() {
         },
       }),
       database.project.findMany({
-        where: { status: { in: ["PREPARING", "IN_PROGRESS", "PAUSED"] } },
+        where: {
+          status: { in: ["PREPARING", "IN_PROGRESS", "PAUSED"] },
+          sourceBusinessModel: { status: { not: "DELETED" } },
+        },
         orderBy: { updatedAt: "desc" },
         take: 4,
         select: {
@@ -86,13 +92,13 @@ export default async function WorkspaceHomePage() {
 
   return (
     <div className="space-y-7">
-      <header className="flex flex-col gap-5 border-b border-base-300/80 pb-7 lg:flex-row lg:items-end lg:justify-between">
+      <header className="grid gap-6 border-b border-base-content pb-8 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
         <div>
           <div className="flex items-center gap-2 text-sm text-base-content/55">
             <span className="status status-sm status-success" aria-hidden="true" />
             {user.department?.name ?? "全公司作战视图"}
           </div>
-          <h1 className="mt-3 text-3xl font-bold tracking-tight sm:text-[2rem]" id="workspace-title">
+          <h1 className="mt-4 max-w-4xl text-4xl font-bold tracking-[-0.03em] sm:text-6xl" id="workspace-title">
             {copy.title}
           </h1>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-base-content/65">{copy.description}</p>
@@ -108,13 +114,13 @@ export default async function WorkspaceHomePage() {
           <h2 className="text-base font-semibold" id="overview-title">今日经营概览</h2>
           <p className="text-xs text-base-content/50">数据随业务进度实时更新</p>
         </div>
-        <div className="grid gap-px overflow-hidden rounded-box border border-base-300 bg-base-300 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid border-y border-base-content sm:grid-cols-2 lg:grid-cols-3">
           {actionItems.map((item) => (
-            <Link className="group bg-base-100 p-5 transition-colors hover:bg-base-200" href={item.href} key={item.label}>
+            <Link className="group border-b border-base-content/20 bg-base-100 p-5 hover:bg-primary/6 sm:border-r lg:border-b-0 last:border-r-0" href={item.href} key={item.label}>
               <div className="flex items-start justify-between gap-4">
                 <div>
                   <p className="text-sm font-medium text-base-content/65">{item.label}</p>
-                  <p className="mt-3 text-3xl font-bold tabular-nums">{item.value}</p>
+                  <p className="mt-3 text-5xl font-bold tracking-[-0.04em] tabular-nums">{item.value}</p>
                 </div>
                 <span aria-hidden="true" className={"status status-sm " + statusTone(item.tone)} />
               </div>
@@ -125,7 +131,7 @@ export default async function WorkspaceHomePage() {
       </section>
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1.45fr)_minmax(18rem,0.55fr)]">
-        <section className="overflow-hidden rounded-box border border-base-300 bg-base-100" aria-labelledby="projects-title">
+        <section className="overflow-hidden border-t border-base-content bg-base-100" aria-labelledby="projects-title">
           <div className="flex items-center justify-between border-b border-base-300 px-5 py-4">
             <div>
               <h2 className="font-semibold" id="projects-title">项目推进</h2>
@@ -156,25 +162,25 @@ export default async function WorkspaceHomePage() {
           )}
         </section>
 
-        <aside className="rounded-box bg-neutral p-5 text-neutral-content" aria-labelledby="quick-entry-title">
-          <p className="text-xs text-neutral-content/50">快捷入口</p>
+        <aside className="bg-primary p-6 text-primary-content" aria-labelledby="quick-entry-title">
+          <p className="text-xs text-primary-content/60">快捷入口</p>
           <h2 className="mt-2 text-lg font-semibold" id="quick-entry-title">继续推进下一步</h2>
           <div className="mt-5 space-y-1">
             {availableModules.slice(0, 6).map((item) => (
               <Link
-                className="group flex items-center gap-3 rounded-field px-2 py-2.5 text-sm text-neutral-content/70 transition-colors hover:bg-neutral-content/8 hover:text-neutral-content"
+                className="group flex items-center gap-3 border-b border-primary-content/15 px-0 py-3 text-sm text-primary-content/75 hover:text-primary-content"
                 href={item.href}
                 key={item.href}
               >
-                <span className="grid size-7 shrink-0 place-items-center rounded-selector bg-neutral-content/8 text-xs">{item.marker}</span>
+                <span className="grid size-7 shrink-0 place-items-center border border-primary-content/25 text-xs">{item.marker}</span>
                 <span className="min-w-0">
                   <span className="block font-medium">{item.label}</span>
-                  <span className="mt-0.5 block truncate text-xs text-neutral-content/40">{item.description}</span>
+                  <span className="mt-0.5 block truncate text-xs text-primary-content/50">{item.description}</span>
                 </span>
               </Link>
             ))}
           </div>
-          <div className="mt-6 border-t border-neutral-content/12 pt-4 text-xs text-neutral-content/50">
+          <div className="mt-6 border-t border-primary-content/20 pt-4 text-xs text-primary-content/55">
             当前身份：{user.name} · @{user.username}
           </div>
         </aside>

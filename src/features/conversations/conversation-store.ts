@@ -28,9 +28,13 @@ export function createPrismaConversationStore(database: PrismaClient) {
         select: { id: true, name: true, code: true },
       });
       const projects = await database.project.findMany({
-        where: actor.role === "SUPER_ADMIN"
-          ? {}
-          : { members: { some: { userId: actor.id, removedAt: null } } },
+        where: {
+          status: { not: "ARCHIVED" },
+          sourceBusinessModel: { status: { not: "DELETED" } },
+          ...(actor.role === "SUPER_ADMIN"
+            ? {}
+            : { members: { some: { userId: actor.id, removedAt: null } } }),
+        },
         orderBy: { updatedAt: "desc" },
         take: 100,
         select: { id: true, name: true, status: true, conversation: { select: { id: true } } },
@@ -82,7 +86,11 @@ export function createPrismaConversationStore(database: PrismaClient) {
 
     async getProject(actor: Actor, projectId: string) {
       const project = await database.project.findUnique({
-        where: { id: projectId },
+        where: {
+          id: projectId,
+          status: { not: "ARCHIVED" },
+          sourceBusinessModel: { status: { not: "DELETED" } },
+        },
         select: {
           id: true, name: true,
           members: { where: { userId: actor.id, removedAt: null }, select: { id: true } },

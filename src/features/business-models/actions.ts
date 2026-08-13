@@ -64,6 +64,8 @@ export async function updateBusinessModelAction(
     );
     revalidatePath("/business-models");
     revalidatePath(`/business-models/${updated.id}`);
+    revalidatePath("/projects");
+    revalidatePath("/conversations");
     return { status: "success", message: `已保存为版本 ${updated.revision}。`, recordId: updated.id };
   } catch (error) {
     return actionError(error);

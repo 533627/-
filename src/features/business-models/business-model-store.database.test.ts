@@ -27,6 +27,18 @@ describeWithDatabase.sequential("business model database operations", () => {
   });
 
   afterAll(async () => {
+    await database.projectMessage.deleteMany({
+      where: { conversation: { project: { sourceBusinessModel: { title: { startsWith: prefix } } } } },
+    });
+    await database.projectEvent.deleteMany({
+      where: { project: { sourceBusinessModel: { title: { startsWith: prefix } } } },
+    });
+    await database.projectConversation.deleteMany({
+      where: { project: { sourceBusinessModel: { title: { startsWith: prefix } } } },
+    });
+    await database.project.deleteMany({
+      where: { sourceBusinessModel: { title: { startsWith: prefix } } },
+    });
     await database.businessModelEvent.deleteMany({ where: { businessModel: { title: { startsWith: prefix } } } });
     await database.businessModel.deleteMany({ where: { title: { startsWith: prefix } } });
     await database.user.deleteMany({ where: { username: { startsWith: prefix } } });
@@ -65,6 +77,16 @@ describeWithDatabase.sequential("business model database operations", () => {
 
   it("soft deletes only after archive and keeps every lifecycle snapshot", async () => {
     await store.transition(owner, modelId, 2, "ARCHIVED");
+    const project = await database.project.create({
+      data: {
+        name: prefix + "待归档项目",
+        objective: "验证删除联动",
+        sourceBusinessModelId: modelId,
+        leadId: ownerId,
+        createdById: ownerId,
+        conversation: { create: { createdById: ownerId } },
+      },
+    });
     await store.transition(owner, modelId, 3, "DELETED");
 
     await expect(database.businessModel.findUniqueOrThrow({ where: { id: modelId } }))
@@ -75,6 +97,10 @@ describeWithDatabase.sequential("business model database operations", () => {
       page: 1, pageSize: 20, query: "", category: "", tag: "", keyword: "", includeDeleted: false,
     });
     expect(page.items.map(({ id }) => id)).not.toContain(modelId);
+    await expect(database.project.findUniqueOrThrow({ where: { id: project.id } }))
+      .resolves.toMatchObject({ status: "ARCHIVED" });
+    await expect(database.projectConversation.count({ where: { projectId: project.id } }))
+      .resolves.toBe(0);
   });
 
   function input() {

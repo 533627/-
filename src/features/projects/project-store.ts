@@ -35,7 +35,8 @@ export function createPrismaProjectStore(database: PrismaClient) {
     async listProjects(actor: Actor, status?: ProjectStatus) {
       return database.project.findMany({
         where: {
-          ...(status ? { status } : {}),
+          status: status ?? { not: "ARCHIVED" },
+          sourceBusinessModel: { status: { not: "DELETED" } },
           ...(actor.role === "SUPER_ADMIN"
             ? {}
             : { members: { some: { userId: actor.id, removedAt: null } } }),
@@ -58,6 +59,8 @@ export function createPrismaProjectStore(database: PrismaClient) {
       const project = await database.project.findFirst({
         where: {
           id: projectId,
+          status: { not: "ARCHIVED" },
+          sourceBusinessModel: { status: { not: "DELETED" } },
           ...(actor.role === "SUPER_ADMIN"
             ? {}
             : { members: { some: { userId: actor.id, removedAt: null } } }),
