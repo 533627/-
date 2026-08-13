@@ -4,6 +4,7 @@ import {
   assertAccountStatusChange,
   prepareAccountCreation,
   preparePasswordReset,
+  prepareUsernameChange,
 } from "@/features/accounts/account-management";
 
 const operationsDepartmentId = "00000000-0000-4000-8000-000000000001";
@@ -143,6 +144,29 @@ describe("prepareAccountCreation", () => {
 });
 
 describe("account mutations", () => {
+  it("normalizes a managed username change and keeps the internal email in sync", () => {
+    expect(
+      prepareUsernameChange(superAdmin, {
+        id: "employee-1",
+        role: "EMPLOYEE",
+        isActive: true,
+      }, "  New.Operator  "),
+    ).toEqual({
+      username: "new.operator",
+      email: "new.operator@internal.invalid",
+    });
+  });
+
+  it("prevents operations administrators from renaming highest administrators", () => {
+    expect(() =>
+      prepareUsernameChange(
+        operationsAdmin,
+        { id: "owner-2", role: "SUPER_ADMIN", isActive: true },
+        "new.owner",
+      ),
+    ).toThrowError(expect.objectContaining({ code: "ACCOUNT_OPERATION_FORBIDDEN" }));
+  });
+
   it("prevents an administrator from deactivating their own account", () => {
     expect(() =>
       assertAccountStatusChange(

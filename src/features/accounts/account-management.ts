@@ -20,6 +20,14 @@ const accountInputSchema = z.object({
   operationsTeam: z.enum(OPERATIONS_TEAMS).nullable(),
 });
 
+const usernameSchema = z
+  .string()
+  .trim()
+  .min(3)
+  .max(30)
+  .regex(/^[a-zA-Z0-9_.]+$/)
+  .transform((username) => username.toLowerCase());
+
 type PasswordDependencies = {
   generatePassword: () => string;
   hashPassword: (password: string) => Promise<string>;
@@ -107,6 +115,22 @@ export async function preparePasswordReset(
   return {
     password,
     passwordHash: await dependencies.hashPassword(password),
+  };
+}
+
+export function prepareUsernameChange(
+  actor: Actor,
+  target: ManagedAccountTarget,
+  rawUsername: unknown,
+) {
+  assertCanManageAccount(actor, target);
+  const parsed = usernameSchema.safeParse(rawUsername);
+  if (!parsed.success) {
+    throw new AccountManagementError("INVALID_ACCOUNT_INPUT");
+  }
+  return {
+    username: parsed.data,
+    email: `${parsed.data}@internal.invalid`,
   };
 }
 

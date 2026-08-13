@@ -7,6 +7,7 @@ import {
   AccountManagementError,
   prepareAccountCreation,
   preparePasswordReset,
+  prepareUsernameChange,
 } from "@/features/accounts/account-management";
 import {
   AccountStoreError,
@@ -30,6 +31,7 @@ const targetSchema = z.object({ targetId: z.uuid() });
 const statusSchema = targetSchema.extend({
   nextIsActive: z.enum(["true", "false"]),
 });
+const usernameTargetSchema = targetSchema.extend({ username: z.string() });
 
 export async function createAccountAction(
   _previousState: AccountActionState,
@@ -105,6 +107,42 @@ export async function resetAccountPasswordAction(
       status: "success",
       message: "密码已重置，旧登录会话已全部退出。",
       credentials: { username: target.username, password: prepared.password },
+    };
+  } catch (error) {
+    return actionError(error);
+  }
+}
+
+export async function updateAccountUsernameAction(
+  _previousState: AccountActionState,
+  formData: FormData,
+): Promise<AccountActionState> {
+  const user = await requireCurrentUser();
+  const actor = toActor(user);
+  if (!hasCapability(actor.role, "ACCOUNT_MANAGE")) return forbidden();
+
+  const parsed = usernameTargetSchema.safeParse({
+    targetId: formData.get("targetId"),
+    username: formData.get("username"),
+  });
+  if (!parsed.success) return invalidInput();
+
+  try {
+    const target = await getDatabase().user.findUnique({
+      where: { id: parsed.data.targetId },
+      select: { id: true, role: true, isActive: true },
+    });
+    if (!target) throw new AccountStoreError("ACCOUNT_NOT_FOUND");
+    const prepared = prepareUsernameChange(actor, target, parsed.data.username);
+    const updated = await createPrismaAccountStore(getDatabase()).updateUsername(
+      actor,
+      target.id,
+      prepared,
+    );
+    revalidatePath("/accounts");
+    return {
+      status: "success",
+      message: `登录账号已修改为 @${updated.username}。`,
     };
   } catch (error) {
     return actionError(error);

@@ -141,6 +141,7 @@ export default async function AccountsPage({
                     accountId={account.id}
                     isActive={account.isActive}
                     isCurrentUser={account.id === user.id}
+                    username={account.username ?? ""}
                   />
                 </li>
               ))}

@@ -198,5 +198,39 @@ export function createPrismaAccountStore(database: PrismaClient) {
         return { id: target.id, username: target.username };
       });
     },
+
+    async updateUsername(
+      actor: Actor,
+      targetId: string,
+      input: { username: string; email: string },
+    ) {
+      try {
+        return await database.$transaction(async (transaction) => {
+          const target = await transaction.user.findUnique({
+            where: { id: targetId },
+            select: { id: true, role: true, isActive: true },
+          });
+          if (!target) throw new AccountStoreError("ACCOUNT_NOT_FOUND");
+          assertCanManageAccount(actor, target);
+          return transaction.user.update({
+            where: { id: target.id },
+            data: {
+              username: input.username,
+              displayUsername: input.username,
+              email: input.email,
+            },
+            select: { id: true, username: true },
+          });
+        });
+      } catch (error) {
+        if (
+          error instanceof Prisma.PrismaClientKnownRequestError &&
+          error.code === "P2002"
+        ) {
+          throw new AccountStoreError("USERNAME_ALREADY_EXISTS");
+        }
+        throw error;
+      }
+    },
   };
 }
