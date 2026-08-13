@@ -2,6 +2,7 @@
 
 import { useActionState } from "react";
 import { useFormStatus } from "react-dom";
+import Link from "next/link";
 
 import {
   resetAccountPasswordAction,
@@ -66,10 +67,16 @@ export function AccountRowActions({
             </p>
           ) : null}
         </details>
-        <form action={resetAction}>
-          <input name="targetId" type="hidden" value={accountId} />
-          <ActionButton idleLabel="重置密码" pendingLabel="正在重置" />
-        </form>
+        {isCurrentUser ? (
+          <Link className="btn btn-primary btn-sm" href="/profile">
+            修改我的密码
+          </Link>
+        ) : (
+          <form action={resetAction}>
+            <input name="targetId" type="hidden" value={accountId} />
+            <ActionButton idleLabel="重置密码" pendingLabel="正在重置" />
+          </form>
+        )}
         <form action={statusAction}>
           <input name="targetId" type="hidden" value={accountId} />
           <input
@@ -85,7 +92,7 @@ export function AccountRowActions({
         </form>
       </div>
 
-      {resetState.status === "success" && resetState.credentials ? (
+      {!isCurrentUser && resetState.status === "success" && resetState.credentials ? (
         <OneTimeCredentials {...resetState.credentials} presentation="modal" />
       ) : null}
       {resetState.status === "error" ? (

@@ -63,7 +63,12 @@ export default async function AccountsPage({
             创建部门账号、重置密码和停用人员。所有新密码只在操作成功后显示一次。
           </p>
         </div>
-        <AccountCreateDialog actorRole={user.role} departments={departments} />
+        <div className="flex flex-wrap gap-2">
+          <Link className="btn btn-primary" href="/profile">
+            修改我的密码
+          </Link>
+          <AccountCreateDialog actorRole={user.role} departments={departments} />
+        </div>
       </header>
 
       <section className="card card-border bg-base-100" aria-labelledby="account-list-title">

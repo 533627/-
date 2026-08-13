@@ -15,6 +15,7 @@ export function ProfileSettings({
   const router = useRouter();
   const [message, setMessage] = useState<string | null>(null);
   const [isPending, setIsPending] = useState(false);
+  const [showPasswords, setShowPasswords] = useState(false);
 
   async function changePassword(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -25,6 +26,11 @@ export function ProfileSettings({
     const currentPassword = String(data.get("currentPassword") ?? "");
     const newPassword = String(data.get("newPassword") ?? "");
     const confirmation = String(data.get("confirmation") ?? "");
+    if (newPassword.length < 8 || newPassword.length > 128) {
+      setMessage("新密码需要 8 至 128 位字符。");
+      setIsPending(false);
+      return;
+    }
     if (newPassword !== confirmation) {
       setMessage("两次输入的新密码不一致。");
       setIsPending(false);
@@ -37,7 +43,7 @@ export function ProfileSettings({
         revokeOtherSessions: false,
       });
       if (result.error) {
-        setMessage("当前密码不正确，或新密码不符合要求。");
+        setMessage("修改失败：请确认当前密码正确，并且新密码为 8 至 128 位。");
         return;
       }
       form.reset();
@@ -66,24 +72,29 @@ export function ProfileSettings({
         <div className="mb-5">
           <h2 className="text-lg font-semibold">修改我的密码</h2>
           <p className="mt-1 text-sm text-base-content/60">
-            新密码至少 12 位。修改成功后当前页面不会退出，下次登录使用新密码。
+            可以设置自己想要的密码，长度为 8 至 128 位。修改成功后当前页面不会退出。
           </p>
         </div>
         <div className="grid gap-4 sm:grid-cols-2">
           <fieldset className="fieldset sm:col-span-2">
             <legend className="fieldset-legend">当前密码</legend>
-            <input className="input w-full" name="currentPassword" minLength={12} required type="password" />
+            <input className="input w-full" name="currentPassword" required type={showPasswords ? "text" : "password"} />
           </fieldset>
           <fieldset className="fieldset">
             <legend className="fieldset-legend">新密码</legend>
-            <input className="input w-full" name="newPassword" minLength={12} maxLength={128} required type="password" />
+            <input className="input w-full" name="newPassword" minLength={8} maxLength={128} required type={showPasswords ? "text" : "password"} />
+            <p className="label">至少 8 位，最多 128 位</p>
           </fieldset>
           <fieldset className="fieldset">
             <legend className="fieldset-legend">再次输入新密码</legend>
-            <input className="input w-full" name="confirmation" minLength={12} maxLength={128} required type="password" />
+            <input className="input w-full" name="confirmation" minLength={8} maxLength={128} required type={showPasswords ? "text" : "password"} />
           </fieldset>
         </div>
         <div className="mt-5 flex flex-wrap items-center gap-4">
+          <label className="flex cursor-pointer items-center gap-2 text-sm">
+            <input className="checkbox checkbox-sm" checked={showPasswords} onChange={(event) => setShowPasswords(event.target.checked)} type="checkbox" />
+            显示密码
+          </label>
           <button className="btn btn-primary" disabled={isPending} type="submit">
             {isPending ? "正在修改" : "确认修改密码"}
           </button>
