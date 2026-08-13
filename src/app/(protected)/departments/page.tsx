@@ -41,8 +41,8 @@ export default async function DepartmentsPage() {
   const canManageStructure = hasCapability(user.role, "DEPARTMENT_STRUCTURE_MANAGE");
   const canTransferMembers = hasCapability(user.role, "ACCOUNT_MANAGE");
 
-  return <div className="space-y-6">
-    <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+  return <div className="module-page space-y-6">
+    <header className="module-header flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
       <div>
         <p className="text-sm text-base-content/60">组织与成员关系</p>
         <h1 className="mt-2 text-3xl font-semibold tracking-tight sm:text-4xl">部门管理</h1>

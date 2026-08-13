@@ -2,16 +2,16 @@ import type { ReactNode } from "react";
 import Image from "next/image";
 import Link from "next/link";
 
-import { appConfig } from "@/lib/app-config";
 import type { CurrentUser } from "@/features/auth/current-user";
 import { LogoutButton } from "@/features/auth/logout-button";
-import { getNavigationForRole } from "@/features/shell/navigation";
 import { createPrismaNotificationStore } from "@/features/notifications/notification-store";
-import { getDatabase } from "@/lib/db";
+import { getNavigationForRole } from "@/features/shell/navigation";
 import {
   WorkspaceDrawerButton,
   WorkspaceNavigation,
 } from "@/features/shell/workspace-navigation";
+import { appConfig } from "@/lib/app-config";
+import { getDatabase } from "@/lib/db";
 
 const ROLE_LABELS = {
   SUPER_ADMIN: "最高管理员",
@@ -29,6 +29,7 @@ export async function AppShell({
 }) {
   const navigation = getNavigationForRole(user.role);
   const unreadCount = await createPrismaNotificationStore(getDatabase()).unreadCount(user.id);
+  const displayName = hasReadableName(user.name) ? user.name : ROLE_LABELS[user.role];
 
   return (
     <div className="drawer min-h-[100dvh] bg-base-200 lg:drawer-open">
@@ -55,14 +56,14 @@ export async function AppShell({
               {unreadCount ? <span className="badge badge-primary badge-sm">{unreadCount > 99 ? "99+" : unreadCount}</span> : null}
             </Link>
             <div className="hidden text-right sm:block">
-              <p className="text-sm font-semibold">{user.name}</p>
+              <p className="text-sm font-semibold">{displayName}</p>
               <p className="text-xs text-base-content/55">{ROLE_LABELS[user.role]}</p>
             </div>
             <span
               aria-hidden="true"
               className="grid size-9 place-items-center rounded-full bg-primary/10 text-sm font-semibold text-primary"
             >
-              {user.name.slice(0, 1)}
+              {displayName.slice(0, 1)}
             </span>
           </div>
         </header>
@@ -82,7 +83,7 @@ export async function AppShell({
             <WorkspaceNavigation items={navigation} />
           </nav>
           <div className="border-t border-neutral-content/12 px-2 pt-4">
-            <p className="truncate text-sm font-semibold">{user.name}</p>
+            <p className="truncate text-sm font-semibold">{displayName}</p>
             <p className="mt-1 truncate text-xs text-neutral-content/55">
               @{user.username}
             </p>
@@ -113,4 +114,8 @@ function Brand() {
       </div>
     </div>
   );
+}
+
+function hasReadableName(name: string) {
+  return name.trim().length > 0 && !/^\?+$/.test(name.trim()) && !name.includes("�");
 }

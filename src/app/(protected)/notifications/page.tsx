@@ -9,8 +9,8 @@ export default async function NotificationsPage() {
   const user = await requireCurrentUser();
   const notifications = await createPrismaNotificationStore(getDatabase()).list(user.id);
 
-  return <div className="space-y-6">
-    <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+  return <div className="module-page space-y-6">
+    <header className="module-header flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
       <div><p className="text-sm text-base-content/60">消息与业务动态</p><h1 className="mt-2 text-3xl font-semibold tracking-tight sm:text-4xl">消息提醒</h1><p className="mt-3 text-sm text-base-content/65">私聊消息、立项审批结果都会集中显示在这里。</p></div>
       {notifications.unreadCount ? <form action={markAllNotificationsReadAction}><button className="btn btn-sm" type="submit">全部标为已读</button></form> : null}
     </header>

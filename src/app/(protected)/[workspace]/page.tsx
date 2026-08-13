@@ -18,7 +18,7 @@ export default async function WorkspaceModulePage({
   }
 
   return (
-    <section aria-labelledby="module-title" className="max-w-3xl">
+    <section aria-labelledby="module-title" className="module-page module-header max-w-3xl">
       <span className="badge badge-soft">模块建设中</span>
       <h1
         className="mt-4 text-3xl font-semibold tracking-tight sm:text-4xl"

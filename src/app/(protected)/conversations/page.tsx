@@ -30,9 +30,9 @@ export default async function ConversationsPage({ searchParams }: { searchParams
     catch (error) { if (!(error instanceof ConversationStoreError)) throw error; }
   }
 
-  return <div className="space-y-5">
-    <header><p className="text-sm text-base-content/60">部门沟通与项目闭环</p><h1 className="mt-2 text-3xl font-semibold tracking-tight sm:text-4xl">协作群聊</h1><p className="mt-3 text-sm text-base-content/65">部门群按部门归属开放，项目群仅项目成员和最高管理员可进入。</p></header>
-    <div className="grid min-h-[38rem] overflow-hidden rounded-box border border-base-300 bg-base-100 lg:grid-cols-[18rem_minmax(0,1fr)]">
+  return <div className="module-page space-y-5">
+    <header className="module-header"><p>部门沟通与项目闭环</p><h1 className="mt-2">协作群聊</h1><p className="mt-3 text-sm text-base-content/65">部门群按部门归属开放，项目群仅项目成员和最高管理员可进入。</p></header>
+    <div className="module-surface grid min-h-[38rem] overflow-hidden border border-base-300 bg-base-100 lg:grid-cols-[18rem_minmax(0,1fr)]">
       <aside className="border-b border-base-300 bg-base-200/50 p-3 lg:border-r lg:border-b-0" aria-label="群聊列表">
         <GroupSection title="部门群">{groups.departments.map((department) => { const params = new URLSearchParams({ kind: "department", id: department.id }); if (department.operationsTeam) params.set("team", department.operationsTeam); return <GroupLink active={conversation?.kind === "department" && conversation.id === department.id && conversation.operationsTeam === department.operationsTeam} href={`/conversations?${params.toString()}`} key={`${department.id}-${department.operationsTeam ?? "department"}`} label={department.name} meta={department.operationsTeam ? "运营内部群" : "部门群"} />; })}</GroupSection>
         <GroupSection title="项目群">{groups.projects.map((project) => <GroupLink active={conversation?.kind === "project" && conversation.id === project.id} href={`/conversations?kind=project&id=${project.id}`} key={project.id} label={project.name} meta="项目协作" />)}</GroupSection>

@@ -37,11 +37,11 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
   const memberIds = new Set(project.members.map(({ userId }) => userId));
   const departmentIds = new Set(project.departments.map(({ departmentId }) => departmentId));
 
-  return <div className="space-y-6">
+  return <div className="module-page space-y-6">
     <nav aria-label="面包屑" className="text-sm text-base-content/60"><Link className="link" href="/projects">项目中心</Link><span aria-hidden="true"> / </span><span>{project.name}</span></nav>
-    <header className="card card-border bg-base-100"><div className="card-body gap-4 p-5 sm:p-6">
+    <header className="module-surface border border-base-300 bg-base-100"><div className="p-5 sm:p-6">
       <div className="flex flex-wrap items-center gap-2"><span className={`badge ${PROJECT_STATUS_BADGES[project.status]}`}>{PROJECT_STATUS_LABELS[project.status]}</span><span className="badge badge-ghost">版本 {project.revision}</span><span className="badge badge-ghost">{project.sourceBusinessModel.targetPlatform}</span></div>
-      <div><h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">{project.name}</h1><p className="mt-3 max-w-3xl whitespace-pre-wrap leading-7 text-base-content/75">{project.objective}</p></div>
+      <div><h1 className="text-[clamp(2.15rem,4vw,4rem)] font-black leading-[0.98] tracking-[-0.055em] text-[#12120f]">{project.name}</h1><p className="mt-3 max-w-3xl whitespace-pre-wrap leading-7 text-base-content/75">{project.objective}</p></div>
       <dl className="grid gap-4 border-t border-base-300 pt-4 text-sm sm:grid-cols-3"><div><dt className="text-base-content/50">负责人</dt><dd className="mt-1 font-medium">{project.lead.name}</dd></div><div><dt className="text-base-content/50">启动时间</dt><dd className="mt-1 font-medium">{formatProjectDate(project.startAt)}</dd></div><div><dt className="text-base-content/50">项目协作群</dt><dd className="mt-1 font-medium">{project.conversation ? "已自动建立" : "尚未建立"}</dd></div></dl>
     </div></header>
 

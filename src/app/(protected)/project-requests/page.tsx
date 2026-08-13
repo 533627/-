@@ -26,8 +26,8 @@ export default async function ProjectRequestsPage({
     : undefined;
   const requests = await createPrismaProjectRequestStore(getDatabase()).listRequests(actor, status);
 
-  return <div className="space-y-6">
-    <header><p className="text-sm text-base-content/60">最高管理员决策队列</p><h1 className="mt-2 text-3xl font-semibold tracking-tight sm:text-4xl">立项审批</h1><p className="mt-3 max-w-2xl leading-7 text-base-content/70">检查商业原文、运营建议和验证目标。批准只进入待建项目状态，项目与协作群将在下一阶段创建。</p></header>
+  return <div className="module-page space-y-6">
+    <header className="module-header"><p>最高管理员决策队列</p><h1 className="mt-2">立项审批</h1><p className="mt-3 max-w-2xl leading-7 text-base-content/70">检查商业原文、运营建议和验证目标。批准后进入项目筹备，并自动建立协作空间。</p></header>
     <nav aria-label="审批状态筛选" className="flex flex-wrap gap-2"><FilterLink active={!status} href="/project-requests">全部</FilterLink>{STATUS_VALUES.map((value) => <FilterLink active={status === value} href={`/project-requests?status=${value}`} key={value}>{STATUS_LABELS[value]}</FilterLink>)}</nav>
     {requests.length ? <ul className="grid gap-5 xl:grid-cols-2">{requests.map((request) => <li className="card card-border bg-base-100" key={request.id}><div className="card-body p-5">
       <div className="flex flex-wrap items-center gap-2"><span className="badge">{STATUS_LABELS[request.status]}</span><span className="badge badge-ghost">{request.businessModel.category}</span></div>

@@ -27,8 +27,8 @@ export default async function BusinessModelsPage({ searchParams }: { searchParam
   ]);
   const canManage = hasCapability(user.role, "BUSINESS_MODEL_MANAGE");
 
-  return <div className="space-y-6">
-    <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+  return <div className="module-page space-y-6">
+    <header className="module-header flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
       <div><p className="text-sm text-base-content/60">项目机会与执行打法</p><h1 className="mt-2 text-3xl font-semibold tracking-tight sm:text-4xl">商业整理</h1><p className="mt-3 max-w-2xl leading-7 text-base-content/70">把值得验证的生意逻辑分条沉淀，保留每次修改版本，再交给运营补充建议和申请立项。</p></div>
       {canManage ? <BusinessModelCreateDialog /> : null}
     </header>

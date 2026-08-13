@@ -52,8 +52,8 @@ export default async function AccountsPage({
   ]);
 
   return (
-    <div className="space-y-6">
-      <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+    <div className="module-page space-y-6">
+      <header className="module-header flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="text-sm text-base-content/60">账号与密码管理</p>
           <h1 className="mt-2 text-3xl font-semibold tracking-tight sm:text-4xl">

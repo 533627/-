@@ -8,9 +8,9 @@
   name: "commerce";
   default: true;
   color-scheme: light;
-  --color-base-100: oklch(99.2% 0.002 270);
-  --color-base-200: oklch(96.8% 0.006 270);
-  --color-base-300: oklch(90.8% 0.012 270);
+  --color-base-100: oklch(99.2% 0.008 90);
+  --color-base-200: oklch(96.4% 0.018 91);
+  --color-base-300: oklch(89.5% 0.028 88);
   --color-base-content: oklch(18% 0.025 274);
   --color-primary: oklch(58% 0.2 274);
   --color-primary-content: oklch(98% 0.01 274);
@@ -30,7 +30,7 @@
   --color-error-content: oklch(99% 0.005 28);
   --radius-selector: 0.5rem;
   --radius-field: 0.5rem;
-  --radius-box: 0.75rem;
+  --radius-box: 0.4rem;
   --size-selector: 0.25rem;
   --size-field: 0.25rem;
   --border: 1px;
@@ -94,6 +94,75 @@ body {
 
 .stage-enter {
   animation: stage-enter 600ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.module-page {
+  animation: stage-enter 520ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.module-header {
+  position: relative;
+  padding: 0.25rem 0 1.5rem 1rem;
+  border-bottom: 1px solid color-mix(in oklab, var(--stage-ink) 18%, transparent);
+}
+
+.module-header::before {
+  position: absolute;
+  inset: 0 auto 1.5rem 0;
+  width: 0.25rem;
+  background: var(--stage-coral);
+  content: "";
+}
+
+.module-header h1 {
+  color: var(--stage-ink);
+  font-size: clamp(2.15rem, 4vw, 4rem);
+  font-weight: 900;
+  line-height: 0.98;
+  letter-spacing: -0.055em;
+}
+
+.module-header > div > p:first-child,
+.module-header > p:first-child {
+  color: color-mix(in oklab, var(--stage-ink) 52%, transparent);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+}
+
+.module-page .card,
+.module-page .stats,
+.module-page .module-surface {
+  border-color: color-mix(in oklab, var(--stage-ink) 18%, transparent);
+  box-shadow: none;
+}
+
+.module-page .card,
+.module-page .module-surface {
+  border-top-width: 3px;
+  border-top-color: var(--stage-ink);
+}
+
+.module-page .btn-primary {
+  border-color: var(--stage-ink);
+  background: var(--stage-ink);
+  color: white;
+}
+
+.module-page .btn-primary:hover {
+  border-color: var(--stage-coral);
+  background: var(--stage-coral);
+  color: var(--stage-ink);
+}
+
+.module-page .table thead {
+  color: color-mix(in oklab, var(--stage-ink) 55%, transparent);
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+}
+
+.module-page .table tbody tr:hover {
+  background: color-mix(in oklab, var(--stage-cream) 35%, transparent);
 }
 
 @keyframes stage-enter {

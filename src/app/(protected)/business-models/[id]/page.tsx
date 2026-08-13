@@ -31,9 +31,9 @@ export default async function BusinessModelDetailPage({ params }: { params: Prom
     ? await createPrismaProjectStore(getDatabase()).getManagementOptions(actor)
     : null;
 
-  return <div className="space-y-6">
+  return <div className="module-page space-y-6">
     <nav className="breadcrumbs text-sm" aria-label="面包屑"><ul><li><Link href="/business-models">商业整理</Link></li><li>{record.title}</li></ul></nav>
-    <header className="flex flex-col gap-4 border-b border-base-300 pb-6 lg:flex-row lg:items-start lg:justify-between">
+    <header className="module-header flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
       <div><div className="flex flex-wrap items-center gap-2"><span className={`badge ${record.status === "ACTIVE" ? "badge-success badge-soft" : "badge-ghost"}`}>{STATUS_LABELS[record.status]}</span><span className="badge">版本 {record.revision}</span></div><h1 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">{record.title}</h1><p className="mt-3 text-sm text-base-content/60">{record.category} · {record.targetPlatform} · {record.updatedBy.name} 更新于 {formatDate(record.updatedAt)}</p></div>
       {canManage ? <BusinessModelLifecycleActions id={record.id} revision={record.revision} status={record.status} /> : null}
     </header>

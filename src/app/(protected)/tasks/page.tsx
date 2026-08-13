@@ -31,8 +31,8 @@ export default async function TasksPage({ searchParams }: { searchParams: Promis
     overdue: allTasks.filter((task) => task.isOverdue).length,
   };
 
-  return <div className="space-y-6">
-    <header><p className="text-sm text-base-content/60">接收、执行、提交与验收都在同一条工作流中</p><h1 className="mt-2 text-3xl font-semibold tracking-tight sm:text-4xl">任务待办</h1><p className="mt-3 max-w-2xl leading-7 text-base-content/70">{user.role === "EMPLOYEE" ? "优先处理临期和被退回的任务，提交后等待派发人验收。" : "跟进你负责执行或派发的任务，及时处理待验收与逾期事项。"}</p></header>
+  return <div className="module-page space-y-6">
+    <header className="module-header"><p>接收、执行、提交与验收都在同一条工作流中</p><h1 className="mt-2">任务待办</h1><p className="mt-3 max-w-2xl leading-7 text-base-content/70">{user.role === "EMPLOYEE" ? "优先处理临期和被退回的任务，提交后等待派发人验收。" : "跟进你负责执行或派发的任务，及时处理待验收与逾期事项。"}</p></header>
 
     <section aria-label="任务指标" className="stats stats-vertical w-full border border-base-300 bg-base-100 sm:stats-horizontal">
       <Metric label="当前任务" value={metrics.total} /><Metric label="执行中" value={metrics.inProgress} /><Metric label="待验收" value={metrics.pendingReview} /><Metric alert label="已逾期" value={metrics.overdue} />
