@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 
 import { requireCurrentUser } from "@/features/auth/current-user-server";
 import { BusinessModelForm } from "@/features/business-models/business-model-form";
+import { BusinessModelImagePanel } from "@/features/business-models/business-model-image-panel";
 import { BusinessModelLifecycleActions } from "@/features/business-models/business-model-lifecycle-actions";
 import { BusinessModelStoreError, createPrismaBusinessModelStore } from "@/features/business-models/business-model-store";
 import { ProjectRequestPanel } from "@/features/project-requests/project-request-panel";
@@ -40,6 +41,11 @@ export default async function BusinessModelDetailPage({ params }: { params: Prom
 
     <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_20rem]">
       <main className="space-y-5">
+        <BusinessModelImagePanel
+          businessModelId={record.id}
+          canManage={canManage && record.status === "ACTIVE"}
+          images={record.images.map((image) => ({ ...image, createdAt: image.createdAt.toISOString() }))}
+        />
         <ContentSection title="机会说明" content={record.opportunity} />
         <ContentSection title="商业逻辑" content={record.businessLogic} />
         <ContentSection title="执行打法" content={record.executionPlan} />

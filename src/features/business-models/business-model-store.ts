@@ -259,6 +259,17 @@ export function createPrismaBusinessModelStore(database: PrismaClient) {
         include: {
           createdBy: { select: { id: true, name: true } },
           updatedBy: { select: { id: true, name: true } },
+          images: {
+            orderBy: { createdAt: "asc" },
+            select: {
+              id: true,
+              fileName: true,
+              mimeType: true,
+              size: true,
+              createdAt: true,
+              uploadedBy: { select: { id: true, name: true } },
+            },
+          },
         },
       });
       if (!record) throw new BusinessModelStoreError("BUSINESS_MODEL_NOT_FOUND");
