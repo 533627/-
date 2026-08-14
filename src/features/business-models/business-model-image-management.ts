@@ -2,7 +2,7 @@ import { hasCapability } from "@/lib/authz/permissions";
 import type { Actor } from "@/lib/authz/types";
 
 export const BUSINESS_MODEL_IMAGE_MAX_BYTES = 3 * 1024 * 1024;
-export const BUSINESS_MODEL_IMAGE_MAX_COUNT = 10;
+export const BUSINESS_MODEL_IMAGE_MAX_COUNT = 50;
 export const BUSINESS_MODEL_IMAGE_TYPES = [
   "image/jpeg",
   "image/png",

@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useActionState, useEffect, useRef } from "react";
+import { startTransition, useActionState, useEffect, useRef, useState } from "react";
 import { useFormStatus } from "react-dom";
 
 import {
@@ -9,6 +9,7 @@ import {
   uploadBusinessModelImageAction,
   type BusinessModelImageActionState,
 } from "@/features/business-models/business-model-image-actions";
+import { ImagePreparationError, prepareImageFile } from "@/features/business-models/business-model-image-compression";
 
 const initialState: BusinessModelImageActionState = { status: "idle" };
 
@@ -29,7 +30,9 @@ export function BusinessModelImagePanel({
   canManage: boolean;
   images: ImageItem[];
 }) {
-  const [state, action] = useActionState(uploadBusinessModelImageAction, initialState);
+  const [state, action, isUploading] = useActionState(uploadBusinessModelImageAction, initialState);
+  const [isPreparing, setIsPreparing] = useState(false);
+  const [clientError, setClientError] = useState("");
   const formRef = useRef<HTMLFormElement>(null);
 
   useEffect(() => {
@@ -44,7 +47,7 @@ export function BusinessModelImagePanel({
             <h2 className="card-title text-lg" id="business-model-images-title">参考图片</h2>
             <p className="mt-1 text-sm text-base-content/60">保存店铺截图、商品图和视觉案例，团队成员都能在这里查看。</p>
           </div>
-          <span className="text-xs text-base-content/50">{images.length} / 10 张</span>
+          <span className="text-xs text-base-content/50">{images.length} / 50 张</span>
         </div>
 
         {images.length ? (
@@ -77,7 +80,29 @@ export function BusinessModelImagePanel({
         )}
 
         {canManage ? (
-          <form action={action} className="border-t border-base-300 pt-4" encType="multipart/form-data" ref={formRef}>
+          <form
+            className="border-t border-base-300 pt-4"
+            encType="multipart/form-data"
+            onSubmit={async (event) => {
+              event.preventDefault();
+              const form = event.currentTarget;
+              const input = form.elements.namedItem("image");
+              if (!(input instanceof HTMLInputElement) || !input.files?.[0]) return;
+              setClientError("");
+              setIsPreparing(true);
+              try {
+                const preparedFile = await prepareImageFile(input.files[0]);
+                const formData = new FormData(form);
+                formData.set("image", preparedFile);
+                startTransition(() => action(formData));
+              } catch (error) {
+                setClientError(error instanceof ImagePreparationError ? error.userMessage : "图片处理失败，请重试。");
+              } finally {
+                setIsPreparing(false);
+              }
+            }}
+            ref={formRef}
+          >
             <input name="businessModelId" type="hidden" value={businessModelId} />
             <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
               <label className="fieldset min-w-0 grow" htmlFor="business-model-image">
@@ -90,12 +115,12 @@ export function BusinessModelImagePanel({
                   required
                   type="file"
                 />
-                <span className="label">支持 JPG、PNG、WebP、GIF，单张不超过 3MB。</span>
+                <span className="label">JPG、PNG、WebP 原图可到 8MB并自动压缩；GIF 为保留动画限 3MB。</span>
               </label>
-              <UploadButton />
+              <UploadButton pending={isPreparing || isUploading} preparing={isPreparing} />
             </div>
-            {state.status !== "idle" ? (
-              <div className={`alert alert-soft mt-3 ${state.status === "error" ? "alert-error" : "alert-success"}`} role={state.status === "error" ? "alert" : "status"}>{state.message}</div>
+            {clientError || state.status !== "idle" ? (
+              <div className={`alert alert-soft mt-3 ${clientError || state.status === "error" ? "alert-error" : "alert-success"}`} role={clientError || state.status === "error" ? "alert" : "status"}>{clientError || (state.status !== "idle" ? state.message : "")}</div>
             ) : null}
           </form>
         ) : null}
@@ -119,9 +144,8 @@ function ImageDeleteForm({ imageId }: { imageId: string }) {
   );
 }
 
-function UploadButton() {
-  const { pending } = useFormStatus();
-  return <button className="btn btn-primary sm:mb-[1.55rem]" disabled={pending} type="submit">{pending ? "上传中…" : "上传图片"}</button>;
+function UploadButton({ pending, preparing }: { pending: boolean; preparing: boolean }) {
+  return <button className="btn btn-primary sm:mb-[1.55rem]" disabled={pending} type="submit">{preparing ? "正在压缩…" : pending ? "上传中…" : "上传图片"}</button>;
 }
 
 function DeleteButton() {

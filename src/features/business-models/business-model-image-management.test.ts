@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  BUSINESS_MODEL_IMAGE_MAX_COUNT,
   prepareBusinessModelImage,
   type BusinessModelImageInput,
 } from "@/features/business-models/business-model-image-management";
@@ -13,6 +14,10 @@ const operationsAdmin = {
 } as const;
 
 describe("prepareBusinessModelImage", () => {
+  it("allows up to fifty reference images per business model", () => {
+    expect(BUSINESS_MODEL_IMAGE_MAX_COUNT).toBe(50);
+  });
+
   it("accepts a small PNG and normalizes its stored metadata", () => {
     const input: BusinessModelImageInput = {
       name: "  商品主图.png  ",

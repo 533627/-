@@ -73,7 +73,7 @@ function imageError(code: BusinessModelImageError["code"]): BusinessModelImageAc
     BUSINESS_MODEL_IMAGE_FORBIDDEN: "你没有管理商业整理图片的权限。",
     BUSINESS_MODEL_IMAGE_INVALID_TYPE: "仅支持 JPG、PNG、WebP 和 GIF 图片。",
     BUSINESS_MODEL_IMAGE_TOO_LARGE: "单张图片不能超过 3MB。",
-    BUSINESS_MODEL_IMAGE_LIMIT_REACHED: "每条商业整理最多保存 10 张图片。",
+    BUSINESS_MODEL_IMAGE_LIMIT_REACHED: "每条商业整理最多保存 50 张图片。",
     BUSINESS_MODEL_IMAGE_NOT_FOUND: "商业整理或图片不存在。",
   };
   return { status: "error", message: messages[code] };
