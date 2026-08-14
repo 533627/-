@@ -10,18 +10,22 @@ export class ImagePreparationError extends Error {
   }
 }
 
-export async function prepareImageFile(file: File) {
+export function validateImageSource(file: { size: number; type: string }) {
   if (file.size > SOURCE_MAX_BYTES) {
     throw new ImagePreparationError("原图不能超过 8MB，请选择较小的图片。");
   }
-  if (file.type === "image/gif") {
-    if (file.size > STORED_MAX_BYTES) {
-      throw new ImagePreparationError("GIF 为保留动画不能自动压缩，请控制在 3MB 以内。");
-    }
-    return file;
+  if (file.type === "image/gif" && file.size > STORED_MAX_BYTES) {
+    throw new ImagePreparationError("GIF 为保留动画不能自动压缩，请控制在 3MB 以内。");
   }
-  if (!COMPRESSIBLE_TYPES.has(file.type)) {
+  if (file.type !== "image/gif" && !COMPRESSIBLE_TYPES.has(file.type)) {
     throw new ImagePreparationError("仅支持 JPG、PNG、WebP 和 GIF 图片。");
+  }
+}
+
+export async function prepareImageFile(file: File) {
+  validateImageSource(file);
+  if (file.type === "image/gif") {
+    return file;
   }
 
   const source = await loadImage(file);

@@ -54,12 +54,20 @@ test.describe("商业整理", () => {
     await page.getByLabel("主要风险").fill("素材同质化");
     await page.locator('input[name="tags"]').fill("场景电商，家居");
     await page.locator('input[name="keywords"]').fill("小红书，收纳");
-    await page.getByRole("button", { name: "保存原始记录" }).click();
+    await page.getByLabel("选择参考图片").setInputFiles({
+      name: "店铺参考图.png",
+      mimeType: "image/png",
+      buffer: Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=", "base64"),
+    });
+    await expect(page.getByRole("button", { name: "保存商业模式与 1 张图片" })).toBeVisible();
+    await page.getByRole("button", { name: "保存商业模式与 1 张图片" }).click();
     await expect(page.getByText("商业模式已记录并生成首个审计版本。")).toBeVisible();
+    await expect(page.getByText("商业模式与 1 张图片均已保存。")).toBeVisible();
 
     const record = await database.businessModel.findFirstOrThrow({ where: { title } });
     businessModelId = record.id;
     expect(record).toMatchObject({ status: "ACTIVE", revision: 1 });
+    await expect(database.businessModelImage.count({ where: { businessModelId } })).resolves.toBe(1);
   });
 
   test("运营组长可按类目标签关键词筛选但不能修改原文", async ({ page }) => {
