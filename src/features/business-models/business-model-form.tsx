@@ -34,7 +34,7 @@ export function BusinessModelCreateDialog() {
     <dialog className="modal modal-bottom sm:modal-middle" ref={dialogRef}>
       <div className="modal-box max-h-[92vh] max-w-4xl overflow-y-auto">
         <div className="flex items-start justify-between gap-4">
-          <div><h2 className="text-xl font-semibold">记录商业模式</h2><p className="mt-2 text-sm text-base-content/65">先保存原始判断和打法，运营建议将在下一阶段单独记录。</p></div>
+          <div><h2 className="text-xl font-semibold">记录商业模式</h2><p className="mt-2 text-sm text-base-content/65">先保存原始判断和打法，保存成功后即可继续上传商品图、店铺截图和视觉案例。</p></div>
           <button aria-label="关闭商业模式窗口" className="btn btn-ghost btn-sm" onClick={() => dialogRef.current?.close()} type="button">关闭</button>
         </div>
         <BusinessModelForm mode="create" />
@@ -63,7 +63,7 @@ export function BusinessModelForm({ mode, values }: { mode: "create" | "update";
     <LongField label="主要风险" name="risks" defaultValue={values?.risks} className="sm:col-span-2" />
     <Field label="标签" name="tags" defaultValue={values?.tags.join("，")} maxLength={640} help="使用逗号分隔，例如：场景电商，低客单" />
     <Field label="关键词" name="keywords" defaultValue={values?.keywords.join("，")} maxLength={640} help="用于精确筛选，例如：收纳，小红书" />
-    {state.status !== "idle" ? <div className={`alert alert-soft sm:col-span-2 ${state.status === "error" ? "alert-error" : "alert-success"}`} role={state.status === "error" ? "alert" : "status"}>{state.message}{state.status === "success" && state.recordId ? <a className="link ml-auto" href={`/business-models/${state.recordId}`}>查看详情</a> : null}</div> : null}
+    {state.status !== "idle" ? <div className={`alert alert-soft sm:col-span-2 ${state.status === "error" ? "alert-error" : "alert-success"}`} role={state.status === "error" ? "alert" : "status"}>{state.message}{state.status === "success" && state.recordId ? <a className="btn btn-sm ml-auto" href={`/business-models/${state.recordId}#reference-images`}>{mode === "create" ? "继续上传图片" : "查看图片"}</a> : null}</div> : null}
     <div className="flex justify-end sm:col-span-2"><SubmitButton label={mode === "create" ? "保存原始记录" : "保存新版本"} /></div>
   </form>;
 }

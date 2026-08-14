@@ -40,7 +40,7 @@ export function BusinessModelImagePanel({
   }, [state]);
 
   return (
-    <section aria-labelledby="business-model-images-title" className="card card-border bg-base-100">
+    <section aria-labelledby="business-model-images-title" className="card card-border scroll-mt-24 bg-base-100" id="reference-images">
       <div className="card-body gap-5 p-5 sm:p-6">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
           <div>

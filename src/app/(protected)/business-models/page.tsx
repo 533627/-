@@ -52,6 +52,7 @@ export default async function BusinessModelsPage({ searchParams }: { searchParam
           <h3 className="card-title mt-2 text-lg"><Link className="link-hover" href={`/business-models/${record.id}`}>{record.title}</Link></h3>
           <p className="line-clamp-3 leading-6 text-base-content/70">{record.opportunity}</p>
           <div className="flex flex-wrap gap-2">{record.tags.map((tag) => <span className="badge badge-sm badge-outline" key={tag}>#{tag}</span>)}</div>
+          <div><Link className={`btn btn-sm ${canManage ? "btn-primary" : "btn-ghost"}`} href={`/business-models/${record.id}#reference-images`}>{canManage ? "上传 / 管理图片" : "查看参考图片"}</Link></div>
           <div className="mt-auto flex flex-wrap items-center justify-between gap-2 border-t border-base-300 pt-3 text-xs text-base-content/55"><span>版本 {record.revision} · {record.updatedBy.name} 更新</span><span>{formatDate(record.updatedAt)}</span></div>
         </div></li>)}
       </ul> : <div className="card card-border mt-4 bg-base-100"><div className="card-body items-center py-12 text-center" role="status"><h3 className="font-semibold">没有匹配的商业模式</h3><p className="text-sm text-base-content/60">调整筛选条件，或由最高管理员记录新的模式。</p></div></div>}
