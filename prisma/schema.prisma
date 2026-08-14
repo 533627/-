@@ -140,6 +140,7 @@ model User {
   createdBusinessModels       BusinessModel[]               @relation("BusinessModelCreatedBy")
   updatedBusinessModels       BusinessModel[]               @relation("BusinessModelUpdatedBy")
   businessModelEvents         BusinessModelEvent[]          @relation("BusinessModelEventActor")
+  uploadedBusinessModelImages BusinessModelImage[]          @relation("BusinessModelImageUploadedBy")
   executionSuggestions        ExecutionSuggestion[]         @relation("ExecutionSuggestionAuthor")
   projectRequests             ProjectRequest[]              @relation("ProjectRequestApplicant")
   reviewedProjectRequests     ProjectRequest[]              @relation("ProjectRequestReviewer")
@@ -153,8 +154,8 @@ model User {
   createdProjectConversations ProjectConversation[]         @relation("ProjectConversationCreatedBy")
   projectMessages             ProjectMessage[]              @relation("ProjectMessageAuthor")
   departmentMessages          DepartmentMessage[]           @relation("DepartmentMessageAuthor")
-  sentDirectMessages          DirectMessage[]                @relation("DirectMessageSender")
-  receivedDirectMessages      DirectMessage[]                @relation("DirectMessageRecipient")
+  sentDirectMessages          DirectMessage[]               @relation("DirectMessageSender")
+  receivedDirectMessages      DirectMessage[]               @relation("DirectMessageRecipient")
   projectEvents               ProjectEvent[]                @relation("ProjectEventActor")
   assignedTasks               Task[]                        @relation("TaskAssignee")
   createdTasks                Task[]                        @relation("TaskAssignedBy")
@@ -190,6 +191,7 @@ model BusinessModel {
   createdAt            DateTime              @default(now()) @db.Timestamptz(3)
   updatedAt            DateTime              @updatedAt @db.Timestamptz(3)
   events               BusinessModelEvent[]
+  images               BusinessModelImage[]
   executionSuggestions ExecutionSuggestion[]
   projectRequests      ProjectRequest[]
   projects             Project[]
@@ -201,6 +203,23 @@ model BusinessModel {
   @@index([keywords], type: Gin)
   @@index([createdById])
   @@map("business_models")
+}
+
+model BusinessModelImage {
+  id              String        @id @default(uuid()) @db.Uuid
+  businessModelId String        @db.Uuid
+  businessModel   BusinessModel @relation(fields: [businessModelId], references: [id], onDelete: Cascade)
+  fileName        String        @db.VarChar(180)
+  mimeType        String        @db.VarChar(50)
+  size            Int
+  data            Bytes
+  uploadedById    String
+  uploadedBy      User          @relation("BusinessModelImageUploadedBy", fields: [uploadedById], references: [id], onDelete: Restrict)
+  createdAt       DateTime      @default(now()) @db.Timestamptz(3)
+
+  @@index([businessModelId, createdAt])
+  @@index([uploadedById])
+  @@map("business_model_images")
 }
 
 model ExecutionSuggestion {
@@ -376,12 +395,12 @@ model ProjectDepartment {
 }
 
 model ProjectConversation {
-  id          String   @id @default(uuid()) @db.Uuid
-  projectId   String   @unique @db.Uuid
-  project     Project  @relation(fields: [projectId], references: [id], onDelete: Restrict)
+  id          String           @id @default(uuid()) @db.Uuid
+  projectId   String           @unique @db.Uuid
+  project     Project          @relation(fields: [projectId], references: [id], onDelete: Restrict)
   createdById String
-  createdBy   User     @relation("ProjectConversationCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
-  createdAt   DateTime @default(now()) @db.Timestamptz(3)
+  createdBy   User             @relation("ProjectConversationCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
+  createdAt   DateTime         @default(now()) @db.Timestamptz(3)
   messages    ProjectMessage[]
 
   @@index([createdById])
@@ -403,14 +422,14 @@ model ProjectMessage {
 }
 
 model DepartmentMessage {
-  id           String     @id @default(uuid()) @db.Uuid
-  departmentId String     @db.Uuid
-  department   Department @relation(fields: [departmentId], references: [id], onDelete: Restrict)
-  authorId     String
-  author       User       @relation("DepartmentMessageAuthor", fields: [authorId], references: [id], onDelete: Restrict)
-  content      String     @db.VarChar(2000)
+  id             String          @id @default(uuid()) @db.Uuid
+  departmentId   String          @db.Uuid
+  department     Department      @relation(fields: [departmentId], references: [id], onDelete: Restrict)
+  authorId       String
+  author         User            @relation("DepartmentMessageAuthor", fields: [authorId], references: [id], onDelete: Restrict)
+  content        String          @db.VarChar(2000)
   operationsTeam OperationsTeam?
-  createdAt    DateTime   @default(now()) @db.Timestamptz(3)
+  createdAt      DateTime        @default(now()) @db.Timestamptz(3)
 
   @@index([departmentId, operationsTeam, createdAt])
   @@index([authorId])
@@ -418,13 +437,13 @@ model DepartmentMessage {
 }
 
 model DirectMessage {
-  id          String   @id @default(uuid()) @db.Uuid
+  id          String    @id @default(uuid()) @db.Uuid
   senderId    String
-  sender      User     @relation("DirectMessageSender", fields: [senderId], references: [id], onDelete: Restrict)
+  sender      User      @relation("DirectMessageSender", fields: [senderId], references: [id], onDelete: Restrict)
   recipientId String
-  recipient   User     @relation("DirectMessageRecipient", fields: [recipientId], references: [id], onDelete: Restrict)
-  content     String   @db.VarChar(2000)
-  createdAt   DateTime @default(now()) @db.Timestamptz(3)
+  recipient   User      @relation("DirectMessageRecipient", fields: [recipientId], references: [id], onDelete: Restrict)
+  content     String    @db.VarChar(2000)
+  createdAt   DateTime  @default(now()) @db.Timestamptz(3)
   readAt      DateTime? @db.Timestamptz(3)
 
   @@index([senderId, recipientId, createdAt])
@@ -484,18 +503,18 @@ model BusinessModelEvent {
 }
 
 model DepartmentMembershipHistory {
-  id               String      @id @default(uuid()) @db.Uuid
-  memberId         String
-  member           User        @relation("MembershipChangedMember", fields: [memberId], references: [id], onDelete: Restrict)
-  fromDepartmentId String?     @db.Uuid
-  fromDepartment   Department? @relation("MembershipFromDepartment", fields: [fromDepartmentId], references: [id], onDelete: Restrict)
-  toDepartmentId   String      @db.Uuid
-  toDepartment     Department  @relation("MembershipToDepartment", fields: [toDepartmentId], references: [id], onDelete: Restrict)
+  id                 String          @id @default(uuid()) @db.Uuid
+  memberId           String
+  member             User            @relation("MembershipChangedMember", fields: [memberId], references: [id], onDelete: Restrict)
+  fromDepartmentId   String?         @db.Uuid
+  fromDepartment     Department?     @relation("MembershipFromDepartment", fields: [fromDepartmentId], references: [id], onDelete: Restrict)
+  toDepartmentId     String          @db.Uuid
+  toDepartment       Department      @relation("MembershipToDepartment", fields: [toDepartmentId], references: [id], onDelete: Restrict)
   fromOperationsTeam OperationsTeam?
   toOperationsTeam   OperationsTeam?
-  changedById      String
-  changedBy        User        @relation("MembershipChangedBy", fields: [changedById], references: [id], onDelete: Restrict)
-  changedAt        DateTime    @default(now()) @db.Timestamptz(3)
+  changedById        String
+  changedBy          User            @relation("MembershipChangedBy", fields: [changedById], references: [id], onDelete: Restrict)
+  changedAt          DateTime        @default(now()) @db.Timestamptz(3)
 
   @@index([memberId, changedAt])
   @@index([fromDepartmentId])
