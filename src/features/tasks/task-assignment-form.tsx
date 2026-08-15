@@ -21,21 +21,25 @@ export function TaskAssignmentForm({
   projectId,
   members,
   projects,
+  standaloneMembers,
   initialValues,
 }: {
   projectId?: string;
   members?: TaskMemberOption[];
   projects?: TaskProjectOption[];
+  standaloneMembers?: TaskMemberOption[];
   initialValues?: TaskAssignmentInitialValues;
 }) {
   const [state, action, pending] = useActionState(createTaskAction, initialState);
   const requestedProjectId = projectId ?? initialValues?.projectId;
   const defaultProjectId = requestedProjectId && (projectId || projects?.some((project) => project.id === requestedProjectId))
     ? requestedProjectId
-    : projects?.[0]?.id ?? "";
+    : standaloneMembers ? "" : projects?.[0]?.id ?? "";
   const defaultMembers = projectId
     ? members ?? []
-    : projects?.find((project) => project.id === defaultProjectId)?.members ?? [];
+    : defaultProjectId
+      ? projects?.find((project) => project.id === defaultProjectId)?.members ?? []
+      : standaloneMembers ?? [];
   const defaultAssigneeId = defaultMembers.some((member) => member.id === initialValues?.assigneeId)
     ? initialValues?.assigneeId ?? ""
     : "";
@@ -43,7 +47,9 @@ export function TaskAssignmentForm({
   const [selectedAssigneeId, setSelectedAssigneeId] = useState(defaultAssigneeId);
   const availableMembers = projectId
     ? members ?? []
-    : projects?.find((project) => project.id === selectedProjectId)?.members ?? [];
+    : selectedProjectId
+      ? projects?.find((project) => project.id === selectedProjectId)?.members ?? []
+      : standaloneMembers ?? [];
 
   return (
     <form action={action} className="card card-border bg-base-100">
@@ -56,11 +62,11 @@ export function TaskAssignmentForm({
 
         {projectId ? <input name="projectId" type="hidden" value={projectId} /> : <fieldset className="fieldset">
           <legend className="fieldset-legend">关联项目</legend>
-          <select aria-label="关联项目" className="select w-full" name="projectId" onChange={(event) => { setSelectedProjectId(event.target.value); setSelectedAssigneeId(""); }} required value={selectedProjectId}>
-            <option value="">请选择已立项项目</option>
+          <select aria-label="关联项目" className="select w-full" name="projectId" onChange={(event) => { setSelectedProjectId(event.target.value); setSelectedAssigneeId(""); }} value={selectedProjectId}>
+            {standaloneMembers ? <option value="">不关联项目（日常任务）</option> : <option value="">请选择已立项项目</option>}
             {projects?.map((project) => <option key={project.id} value={project.id}>{project.name}</option>)}
           </select>
-          <p className="label">任务会同步显示在对应项目中。</p>
+          <p className="label">日常任务可直接派给本组员工；选择项目后也会同步显示在项目中。</p>
         </fieldset>}
 
         <fieldset className="fieldset">
@@ -125,7 +131,7 @@ export function TaskAssignmentForm({
           >
             {state.status === "idle" ? "" : state.message}
           </p>
-          <button className="btn btn-primary" disabled={pending || !availableMembers.length || !selectedProjectId} type="submit">
+          <button className="btn btn-primary" disabled={pending || !availableMembers.length} type="submit">
             {pending ? "派发中…" : "派发任务"}
           </button>
         </div>

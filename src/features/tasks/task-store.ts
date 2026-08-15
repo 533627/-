@@ -26,7 +26,7 @@ export class TaskStoreError extends Error {
 }
 
 export type CreateTaskInput = {
-  projectId: string;
+  projectId: string | null;
   title: string;
   description: string;
   priority: TaskPriority;
@@ -47,22 +47,24 @@ export function createPrismaTaskStore(database: PrismaClient) {
       if (!hasCapability(actor.role, "TASK_ASSIGN")) throw new TaskStoreError("TASK_ASSIGN_FORBIDDEN");
       const input = validateTaskInput(rawInput);
       return database.$transaction(async (transaction) => {
-        const project = await transaction.project.findFirst({
-          where: {
-            id: input.projectId,
-            status: { notIn: ["COMPLETED", "ARCHIVED"] },
-            ...(actor.role === "SUPER_ADMIN" ? {} : { members: { some: { userId: actor.id, removedAt: null } } }),
-          },
-          select: { id: true },
-        });
-        if (!project) throw new TaskStoreError("TASK_PROJECT_NOT_ACTIONABLE");
+        if (input.projectId) {
+          const project = await transaction.project.findFirst({
+            where: {
+              id: input.projectId,
+              status: { notIn: ["COMPLETED", "ARCHIVED"] },
+              ...(actor.role === "SUPER_ADMIN" ? {} : { members: { some: { userId: actor.id, removedAt: null } } }),
+            },
+            select: { id: true },
+          });
+          if (!project) throw new TaskStoreError("TASK_PROJECT_NOT_ACTIONABLE");
+        }
 
         const assignee = await transaction.user.findFirst({
           where: {
             id: input.assigneeId,
             isActive: true,
             departmentId: { not: null },
-            projectMemberships: { some: { projectId: input.projectId, removedAt: null } },
+            ...(input.projectId ? { projectMemberships: { some: { projectId: input.projectId, removedAt: null } } } : {}),
           },
           select: { id: true, role: true, departmentId: true, operationsTeam: true },
         });
@@ -116,10 +118,10 @@ export function createPrismaTaskStore(database: PrismaClient) {
     async listTasks(actor: Actor, status?: TaskStatus) {
       const tasks = await database.task.findMany({
         where: {
-          project: {
-            status: { not: "ARCHIVED" },
-            sourceBusinessModel: { status: { not: "DELETED" } },
-          },
+          OR: [
+            { projectId: null },
+            { project: { status: { not: "ARCHIVED" }, sourceBusinessModel: { status: { not: "DELETED" } } } },
+          ],
           ...(status ? { status } : {}),
           ...(actor.role === "SUPER_ADMIN" ? {} : { OR: [{ assigneeId: actor.id }, { assignedById: actor.id }] }),
         },
@@ -186,6 +188,19 @@ export function createPrismaTaskStore(database: PrismaClient) {
       })).filter((project) => project.members.length);
     },
 
+    async listDirectAssignmentMembers(actor: Actor) {
+      if (!hasCapability(actor.role, "TASK_ASSIGN")) throw new TaskStoreError("TASK_ASSIGN_FORBIDDEN");
+      const users = await database.user.findMany({
+        where: { isActive: true, departmentId: { not: null } },
+        orderBy: { name: "asc" },
+        take: 500,
+        select: { id: true, name: true, role: true, departmentId: true, operationsTeam: true, department: { select: { name: true } } },
+      });
+      return users.filter((user) => user.departmentId
+        && (actor.role !== "OPERATIONS_ADMIN" || user.role === "EMPLOYEE")
+        && canAssignOperationsTeamTask(actor, user.departmentId, user.operationsTeam));
+    },
+
     async listYesterdayTaskTemplates(actor: Actor, now = new Date()) {
       if (!hasCapability(actor.role, "TASK_ASSIGN")) throw new TaskStoreError("TASK_ASSIGN_FORBIDDEN");
       const { start, end } = previousChinaDayRange(now);
@@ -194,11 +209,14 @@ export function createPrismaTaskStore(database: PrismaClient) {
           assignedById: actor.id,
           createdAt: { gte: start, lt: end },
           assignee: { isActive: true, departmentId: { not: null } },
-          project: {
-            status: { notIn: ["COMPLETED", "ARCHIVED"] },
-            sourceBusinessModel: { status: { not: "DELETED" } },
-            ...(actor.role === "SUPER_ADMIN" ? {} : { members: { some: { userId: actor.id, removedAt: null } } }),
-          },
+          OR: [
+            { projectId: null },
+            { project: {
+              status: { notIn: ["COMPLETED", "ARCHIVED"] },
+              sourceBusinessModel: { status: { not: "DELETED" } },
+              ...(actor.role === "SUPER_ADMIN" ? {} : { members: { some: { userId: actor.id, removedAt: null } } }),
+            } },
+          ],
         },
         orderBy: { createdAt: "desc" },
         take: 50,
@@ -227,17 +245,18 @@ export function createPrismaTaskStore(database: PrismaClient) {
       });
 
       if (!tasks.length) return [];
-      const memberships = await database.projectMember.findMany({
+      const projectTasks = tasks.filter((task) => task.projectId);
+      const memberships = projectTasks.length ? await database.projectMember.findMany({
         where: {
           removedAt: null,
-          OR: tasks.map((task) => ({ projectId: task.projectId, userId: task.assigneeId })),
+          OR: projectTasks.map((task) => ({ projectId: task.projectId!, userId: task.assigneeId })),
         },
         select: { projectId: true, userId: true },
-      });
+      }) : [];
       const activeMemberships = new Set(memberships.map((membership) => `${membership.projectId}:${membership.userId}`));
 
       return tasks.filter((task) => task.assignee.departmentId
-        && activeMemberships.has(`${task.projectId}:${task.assigneeId}`)
+        && (!task.projectId || activeMemberships.has(`${task.projectId}:${task.assigneeId}`))
         && (actor.role !== "OPERATIONS_ADMIN" || task.assignee.role === "EMPLOYEE")
         && canAssignOperationsTeamTask(actor, task.assignee.departmentId, task.assignee.operationsTeam));
     },

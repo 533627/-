@@ -28,6 +28,7 @@ describeWithDatabase.sequential("task assignment and execution", () => {
   let projectId = "";
   let businessModelId = "";
   let taskId = "";
+  let standaloneTaskId = "";
 
   beforeAll(async () => {
     await database.department.createMany({ data: [
@@ -64,6 +65,8 @@ describeWithDatabase.sequential("task assignment and execution", () => {
   });
 
   afterAll(async () => {
+    await database.taskEvent.deleteMany({ where: { task: { OR: [{ assignedById: operationsId }, { assignedById: managerId }] } } });
+    await database.task.deleteMany({ where: { OR: [{ assignedById: operationsId }, { assignedById: managerId }] } });
     await database.taskEvent.deleteMany({ where: { task: { projectId } } });
     await database.task.deleteMany({ where: { projectId } });
     await database.projectEvent.deleteMany({ where: { projectId } });
@@ -130,6 +133,31 @@ describeWithDatabase.sequential("task assignment and execution", () => {
     const summary = await store.getProjectTaskSummary(owner, projectId);
     expect(summary).toMatchObject({ total: 2, completed: 1, completionRate: 50 });
     expect(await store.listTasks(manager)).toHaveLength(1);
+  });
+
+  it("lets an operations administrator publish a standalone task to their team", async () => {
+    const created = await store.createTask(operations, {
+      projectId: null,
+      title: "整理今日商品数据",
+      description: "汇总本组今天的商品点击数据",
+      priority: "MEDIUM",
+      assigneeId: employeeId,
+      dueAt: futureDate(2),
+    });
+    standaloneTaskId = created.id;
+    expect(created).toMatchObject({ projectId: null, assigneeId: employeeId, assignedById: operationsId });
+
+    await expect(store.createTask(operations, {
+      projectId: null,
+      title: "越组日常任务",
+      description: "不允许",
+      priority: "MEDIUM",
+      assigneeId: warehouseEmployeeId,
+      dueAt: futureDate(2),
+    })).rejects.toEqual(new TaskStoreError("TASK_ASSIGN_FORBIDDEN"));
+
+    await expect(store.transition(employee, standaloneTaskId, 1, { type: "COMPLETE" }))
+      .resolves.toMatchObject({ status: "COMPLETED", projectId: null });
   });
 
   it("only offers the current publisher's tasks from yesterday for reuse", async () => {

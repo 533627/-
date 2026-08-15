@@ -28,9 +28,10 @@ export default async function TasksPage({ searchParams }: { searchParams: Promis
   const taskStore = createPrismaTaskStore(getDatabase());
   const canAssign = hasCapability(user.role, "TASK_ASSIGN");
   const now = new Date();
-  const [allTasks, assignmentOptions, yesterdayTaskTemplates] = await Promise.all([
+  const [allTasks, assignmentOptions, directAssignmentMembers, yesterdayTaskTemplates] = await Promise.all([
     taskStore.listTasks(actor),
     canAssign ? taskStore.listAssignmentOptions(actor) : Promise.resolve(null),
+    canAssign ? taskStore.listDirectAssignmentMembers(actor) : Promise.resolve([]),
     canAssign ? taskStore.listYesterdayTaskTemplates(actor, now) : Promise.resolve([]),
   ]);
   const tasks = status ? allTasks.filter((task) => task.status === status) : allTasks;
@@ -42,7 +43,7 @@ export default async function TasksPage({ searchParams }: { searchParams: Promis
   };
 
   return <div className="module-page space-y-6">
-    <header className="module-header"><div className="flex flex-wrap items-end justify-between gap-4"><div><p>发布、执行和完成情况集中管理</p><h1 className="mt-2">任务待办</h1><p className="mt-3 max-w-2xl leading-7 text-base-content/70">{user.role === "EMPLOYEE" ? "完成工作后由你本人点击确认完成，系统会立即记录完成时间。" : user.role === "OPERATIONS_ADMIN" ? "可向本运营组的项目员工发布任务，并跟进完成情况。" : "跟进你负责执行或派发的任务，及时处理逾期事项。"}</p></div>{assignmentOptions ? <TaskPublishDialog projects={assignmentOptions.map((project) => ({ id: project.id, name: project.name, members: project.members.map((member) => ({ id: member.id, name: member.name, departmentName: member.department?.name ?? "未分配部门" })) }))} yesterdayTasks={yesterdayTaskTemplates.map((task) => ({ id: task.id, projectId: task.projectId, projectName: task.project.name, assigneeId: task.assigneeId, assigneeName: task.assignee.name, title: task.title, description: task.description, priority: task.priority, dueAt: formatChinaDateTimeLocal(nextReusableDueAt(task.dueAt, now)) }))} /> : null}</div></header>
+    <header className="module-header"><div className="flex flex-wrap items-end justify-between gap-4"><div><p>发布、执行和完成情况集中管理</p><h1 className="mt-2">任务待办</h1><p className="mt-3 max-w-2xl leading-7 text-base-content/70">{user.role === "EMPLOYEE" ? "完成工作后由你本人点击确认完成，系统会立即记录完成时间。" : user.role === "OPERATIONS_ADMIN" ? "可直接向本运营组员工发布日常任务，也可关联已立项项目。" : "跟进你负责执行或派发的任务，及时处理逾期事项。"}</p></div>{assignmentOptions ? <TaskPublishDialog projects={assignmentOptions.map((project) => ({ id: project.id, name: project.name, members: project.members.map((member) => ({ id: member.id, name: member.name, departmentName: member.department?.name ?? "未分配部门" })) }))} standaloneMembers={directAssignmentMembers.map((member) => ({ id: member.id, name: member.name, departmentName: member.department?.name ?? "未分配部门" }))} yesterdayTasks={yesterdayTaskTemplates.map((task) => ({ id: task.id, projectId: task.projectId ?? undefined, projectName: task.project?.name ?? "日常任务", assigneeId: task.assigneeId, assigneeName: task.assignee.name, title: task.title, description: task.description, priority: task.priority, dueAt: formatChinaDateTimeLocal(nextReusableDueAt(task.dueAt, now)) }))} /> : null}</div></header>
 
     <section aria-label="任务指标" className="stats stats-vertical w-full border border-base-300 bg-base-100 sm:stats-horizontal">
       <Metric label="当前任务" value={metrics.total} /><Metric label="执行中" value={metrics.inProgress} /><Metric label="待验收" value={metrics.pendingReview} /><Metric alert label="已逾期" value={metrics.overdue} />
@@ -52,7 +53,7 @@ export default async function TasksPage({ searchParams }: { searchParams: Promis
 
     {tasks.length ? <ul className="space-y-4">{tasks.map((task) => <li className="card card-border bg-base-100" data-testid={`task-${task.id}`} id={`task-${task.id}`} key={task.id}><div className="card-body gap-4 p-5">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><span className={`badge ${TASK_STATUS_BADGES[task.status]}`}>{TASK_STATUS_LABELS[task.status]}</span><span className={`badge ${TASK_PRIORITY_BADGES[task.priority]}`}>{TASK_PRIORITY_LABELS[task.priority]}优先级</span>{task.isOverdue ? <span className="badge badge-error">已逾期</span> : null}</div><h2 className="mt-3 text-xl font-semibold">{task.title}</h2><p className="mt-1 text-sm text-base-content/55">项目：<Link className="link" href={`/projects/${task.project.id}`}>{task.project.name}</Link></p></div>
+        <div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><span className={`badge ${TASK_STATUS_BADGES[task.status]}`}>{TASK_STATUS_LABELS[task.status]}</span><span className={`badge ${TASK_PRIORITY_BADGES[task.priority]}`}>{TASK_PRIORITY_LABELS[task.priority]}优先级</span>{task.isOverdue ? <span className="badge badge-error">已逾期</span> : null}</div><h2 className="mt-3 text-xl font-semibold">{task.title}</h2><p className="mt-1 text-sm text-base-content/55">{task.project ? <>项目：<Link className="link" href={`/projects/${task.project.id}`}>{task.project.name}</Link></> : "类型：日常任务（不关联项目）"}</p></div>
         <div className="text-sm sm:text-right"><p className={task.isOverdue ? "font-semibold text-error" : "text-base-content/65"}>截止 {formatTaskDate(task.dueAt)}</p><p className="mt-1 text-base-content/50">版本 {task.version}</p></div>
       </div>
       {task.description ? <p className="whitespace-pre-wrap leading-6 text-base-content/75">{task.description}</p> : null}

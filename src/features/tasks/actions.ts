@@ -15,7 +15,7 @@ export type TaskActionState =
   | { status: "error"; message: string };
 
 const createSchema = z.object({
-  projectId: z.uuid(),
+  projectId: z.union([z.uuid(), z.literal("")]).transform((value) => value || null),
   title: z.string().trim().min(1).max(200),
   description: z.string().trim().max(4000),
   priority: z.enum(["LOW", "MEDIUM", "HIGH", "URGENT"]),
@@ -25,7 +25,7 @@ const createSchema = z.object({
 
 const transitionSchema = z.object({
   taskId: z.uuid(),
-  projectId: z.uuid(),
+  projectId: z.union([z.uuid(), z.literal("")]).transform((value) => value || null),
   version: z.coerce.number().int().positive(),
   action: z.enum(["ACCEPT", "START", "SUBMIT", "REJECT", "APPROVE", "COMPLETE"]),
   note: z.string().max(2000).optional(),
@@ -42,7 +42,7 @@ export async function createTaskAction(_state: TaskActionState, formData: FormDa
     const dueAt = new Date(`${parsed.data.dueAt}:00+08:00`);
     await createPrismaTaskStore(getDatabase()).createTask(actor, { ...parsed.data, dueAt });
     revalidatePath("/tasks");
-    revalidatePath(`/projects/${parsed.data.projectId}`);
+    if (parsed.data.projectId) revalidatePath(`/projects/${parsed.data.projectId}`);
     return { status: "success", message: "任务已派发，员工可在任务待办中接收。" };
   } catch (error) {
     return taskErrorState(error);
@@ -61,7 +61,7 @@ export async function transitionTaskAction(_state: TaskActionState, formData: Fo
       actor, parsed.data.taskId, parsed.data.version, { type: parsed.data.action, note: parsed.data.note },
     );
     revalidatePath("/tasks");
-    revalidatePath(`/projects/${parsed.data.projectId}`);
+    if (parsed.data.projectId) revalidatePath(`/projects/${parsed.data.projectId}`);
     return { status: "success", message: successMessage(parsed.data.action) };
   } catch (error) {
     return taskErrorState(error);

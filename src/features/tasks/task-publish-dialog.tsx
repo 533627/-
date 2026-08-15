@@ -17,9 +17,11 @@ type PublishMode = "new" | "reuse";
 
 export function TaskPublishDialog({
   projects,
+  standaloneMembers,
   yesterdayTasks,
 }: {
   projects: TaskProjectOption[];
+  standaloneMembers: Array<{ id: string; name: string; departmentName: string }>;
   yesterdayTasks: YesterdayTaskTemplate[];
 }) {
   const dialogRef = useRef<HTMLDialogElement>(null);
@@ -83,11 +85,11 @@ export function TaskPublishDialog({
             </div> : <p className="mt-4 text-sm text-base-content/55">昨天没有可复用的任务，可以直接创建新任务。</p>}
           </section> : null}
 
-          {projects.length
+          {projects.length || standaloneMembers.length
             ? mode === "new" || selectedTemplate
-              ? <TaskAssignmentForm initialValues={mode === "reuse" ? selectedTemplate : undefined} key={mode === "reuse" ? selectedTemplate?.id : "new-task"} projects={projects} />
+              ? <TaskAssignmentForm initialValues={mode === "reuse" ? selectedTemplate : undefined} key={mode === "reuse" ? selectedTemplate?.id : "new-task"} projects={projects} standaloneMembers={standaloneMembers} />
               : yesterdayTasks.length ? <div className="rounded-box border border-dashed border-base-300 px-5 py-8 text-center"><p className="font-medium">请选择一条昨日任务</p><p className="mt-1 text-sm text-base-content/55">选择后会带入原内容，你可以修改全部字段再发布。</p></div> : null
-            : <div className="alert alert-info alert-soft" role="status">目前没有可派单的本组项目成员。请先由最高管理员把员工加入项目，并确认运营分组设置正确。</div>}
+            : <div className="alert alert-info alert-soft" role="status">目前没有可派单的本组员工。请先确认员工账号已启用，并且运营分组设置正确。</div>}
         </div>
       </div>
       <form className="modal-backdrop" method="dialog"><button aria-label="关闭发布任务窗口">关闭</button></form>

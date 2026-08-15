@@ -59,6 +59,8 @@ test.describe("任务闭环", () => {
 
   test.beforeEach(async () => { await database.rateLimit.deleteMany(); });
   test.afterAll(async () => {
+    await database.taskEvent.deleteMany({ where: { task: { OR: [{ assignedById: managerId }, { assigneeId: employeeId }] } } });
+    await database.task.deleteMany({ where: { OR: [{ assignedById: managerId }, { assigneeId: employeeId }] } });
     await database.taskEvent.deleteMany({ where: { task: { projectId } } });
     await database.task.deleteMany({ where: { projectId } });
     await database.projectEvent.deleteMany({ where: { projectId } });
@@ -131,7 +133,7 @@ test.describe("任务闭环", () => {
     await expect(page.getByRole("dialog", { name: "发布任务" })).toBeVisible();
     await expect(page.getByRole("button", { name: "新建任务" })).toHaveAttribute("aria-pressed", "true");
     await expect(page.getByRole("heading", { name: "派发新任务" })).toBeVisible();
-    await page.getByLabel("关联项目").selectOption(projectId);
+    await page.getByLabel("关联项目").selectOption("");
     await page.getByLabel("任务标题").fill(directTaskTitle);
     await page.getByLabel("负责人").selectOption(employeeId);
     await page.getByLabel("截止时间").fill(futureLocalDateTime());
