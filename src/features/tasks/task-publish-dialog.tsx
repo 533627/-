@@ -13,6 +13,7 @@ type YesterdayTaskTemplate = TaskAssignmentInitialValues & {
   projectName: string;
   assigneeName: string;
 };
+type PublishMode = "new" | "reuse";
 
 export function TaskPublishDialog({
   projects,
@@ -22,11 +23,17 @@ export function TaskPublishDialog({
   yesterdayTasks: YesterdayTaskTemplate[];
 }) {
   const dialogRef = useRef<HTMLDialogElement>(null);
+  const [mode, setMode] = useState<PublishMode>("new");
   const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
   const selectedTemplate = yesterdayTasks.find((task) => task.id === selectedTemplateId);
+  const openDialog = () => {
+    setMode("new");
+    setSelectedTemplateId(null);
+    dialogRef.current?.showModal();
+  };
 
   return <>
-    <button className="btn btn-primary" onClick={() => dialogRef.current?.showModal()} type="button">发布任务</button>
+    <button className="btn btn-primary" onClick={openDialog} type="button">发布任务</button>
     <dialog aria-labelledby="publish-task-dialog-title" className="modal modal-bottom sm:modal-middle" ref={dialogRef}>
       <div className="modal-box max-h-[92vh] max-w-4xl overflow-y-auto p-0">
         <div className="sticky top-0 z-10 flex items-start justify-between gap-4 border-b border-base-300 bg-base-100/95 px-5 py-4 backdrop-blur">
@@ -38,13 +45,28 @@ export function TaskPublishDialog({
         </div>
 
         <div className="space-y-5 p-5">
-          <section aria-labelledby="yesterday-task-title" className="rounded-box border border-base-300 bg-base-200/55 p-4">
+          <div aria-label="任务创建方式" className="tabs tabs-box w-full" role="group">
+            <button
+              aria-pressed={mode === "new"}
+              className={`tab flex-1 ${mode === "new" ? "tab-active" : ""}`}
+              onClick={() => { setMode("new"); setSelectedTemplateId(null); }}
+              type="button"
+            >新建任务</button>
+            <button
+              aria-pressed={mode === "reuse"}
+              className={`tab flex-1 ${mode === "reuse" ? "tab-active" : ""}`}
+              onClick={() => setMode("reuse")}
+              type="button"
+            >复用昨日任务{yesterdayTasks.length ? `（${yesterdayTasks.length}）` : ""}</button>
+          </div>
+
+          {mode === "reuse" ? <section aria-labelledby="yesterday-task-title" className="rounded-box border border-base-300 bg-base-200/55 p-4">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
                 <h3 className="font-semibold" id="yesterday-task-title">复用昨日任务</h3>
                 <p className="mt-1 text-sm text-base-content/60">只显示你昨天发布的任务；复用后，项目、负责人和任务内容都可以修改。</p>
               </div>
-              {selectedTemplate ? <button className="btn btn-ghost btn-sm" onClick={() => setSelectedTemplateId(null)} type="button">清空，创建新任务</button> : null}
+              {selectedTemplate ? <button className="btn btn-ghost btn-sm" onClick={() => { setMode("new"); setSelectedTemplateId(null); }} type="button">改为新建任务</button> : null}
             </div>
 
             {yesterdayTasks.length ? <div className="mt-4 grid gap-2 sm:grid-cols-2">
@@ -59,10 +81,12 @@ export function TaskPublishDialog({
                 <span className="mt-2 inline-block text-xs font-medium text-primary">复用并修改</span>
               </button>)}
             </div> : <p className="mt-4 text-sm text-base-content/55">昨天没有可复用的任务，可以直接创建新任务。</p>}
-          </section>
+          </section> : null}
 
           {projects.length
-            ? <TaskAssignmentForm initialValues={selectedTemplate} key={selectedTemplate?.id ?? "new-task"} projects={projects} />
+            ? mode === "new" || selectedTemplate
+              ? <TaskAssignmentForm initialValues={mode === "reuse" ? selectedTemplate : undefined} key={mode === "reuse" ? selectedTemplate?.id : "new-task"} projects={projects} />
+              : yesterdayTasks.length ? <div className="rounded-box border border-dashed border-base-300 px-5 py-8 text-center"><p className="font-medium">请选择一条昨日任务</p><p className="mt-1 text-sm text-base-content/55">选择后会带入原内容，你可以修改全部字段再发布。</p></div> : null
             : <div className="alert alert-info alert-soft" role="status">目前没有可派单的本组项目成员。请先由最高管理员把员工加入项目，并确认运营分组设置正确。</div>}
         </div>
       </div>
