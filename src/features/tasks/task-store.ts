@@ -63,9 +63,10 @@ export function createPrismaTaskStore(database: PrismaClient) {
             departmentId: { not: null },
             projectMemberships: { some: { projectId: input.projectId, removedAt: null } },
           },
-          select: { id: true, departmentId: true, operationsTeam: true },
+          select: { id: true, role: true, departmentId: true, operationsTeam: true },
         });
         if (!assignee?.departmentId) throw new TaskStoreError("TASK_ASSIGNEE_INVALID");
+        if (actor.role === "OPERATIONS_ADMIN" && assignee.role !== "EMPLOYEE") throw new TaskStoreError("TASK_ASSIGN_FORBIDDEN");
         if (!canAssignOperationsTeamTask(actor, assignee.departmentId, assignee.operationsTeam)) throw new TaskStoreError("TASK_ASSIGN_FORBIDDEN");
 
         const task = await transaction.task.create({
@@ -148,9 +149,40 @@ export function createPrismaTaskStore(database: PrismaClient) {
         where: { projectId, removedAt: null, user: { isActive: true, departmentId: { not: null } } },
         orderBy: { user: { name: "asc" } },
         take: 500,
-        select: { user: { select: { id: true, name: true, departmentId: true, operationsTeam: true, department: { select: { name: true } } } } },
+        select: { user: { select: { id: true, name: true, role: true, departmentId: true, operationsTeam: true, department: { select: { name: true } } } } },
       });
-      return members.map(({ user }) => user).filter((user) => user.departmentId && canAssignOperationsTeamTask(actor, user.departmentId, user.operationsTeam));
+      return members.map(({ user }) => user).filter((user) => user.departmentId
+        && (actor.role !== "OPERATIONS_ADMIN" || user.role === "EMPLOYEE")
+        && canAssignOperationsTeamTask(actor, user.departmentId, user.operationsTeam));
+    },
+
+    async listAssignmentOptions(actor: Actor) {
+      if (!hasCapability(actor.role, "TASK_ASSIGN")) throw new TaskStoreError("TASK_ASSIGN_FORBIDDEN");
+      const projects = await database.project.findMany({
+        where: {
+          status: { notIn: ["COMPLETED", "ARCHIVED"] },
+          sourceBusinessModel: { status: { not: "DELETED" } },
+          ...(actor.role === "SUPER_ADMIN" ? {} : { members: { some: { userId: actor.id, removedAt: null } } }),
+        },
+        orderBy: { updatedAt: "desc" },
+        take: 100,
+        select: {
+          id: true,
+          name: true,
+          members: {
+            where: { removedAt: null, user: { isActive: true, departmentId: { not: null } } },
+            orderBy: { user: { name: "asc" } },
+            select: { user: { select: { id: true, name: true, role: true, departmentId: true, operationsTeam: true, department: { select: { name: true } } } } },
+          },
+        },
+      });
+      return projects.map((project) => ({
+        id: project.id,
+        name: project.name,
+        members: project.members.map(({ user }) => user).filter((user) => user.departmentId
+          && (actor.role !== "OPERATIONS_ADMIN" || user.role === "EMPLOYEE")
+          && canAssignOperationsTeamTask(actor, user.departmentId, user.operationsTeam)),
+      })).filter((project) => project.members.length);
     },
 
     async getProjectTaskSummary(actor: Actor, projectId: string) {

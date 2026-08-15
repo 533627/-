@@ -106,6 +106,9 @@ test.describe("用户名登录和角色工作区", () => {
     await page.getByLabel("密码").fill(password);
     await page.getByRole("button", { name: "登录" }).click();
     await expect(page).toHaveURL("/");
+    await page.getByRole("button", { name: "打开账号菜单" }).click();
+    await expect(page.getByRole("button", { name: "退出登录" })).toBeVisible();
+    await page.getByRole("button", { name: "打开账号菜单" }).click();
     await page.getByRole("button", { name: "打开菜单" }).click();
 
     const navigation = page.getByRole("navigation", { name: "主导航" });

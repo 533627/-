@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 
 import { createTaskAction, type TaskActionState } from "@/features/tasks/actions";
 
@@ -9,11 +9,18 @@ const initialState: TaskActionState = { status: "idle" };
 export function TaskAssignmentForm({
   projectId,
   members,
+  projects,
 }: {
-  projectId: string;
-  members: Array<{ id: string; name: string; departmentName: string }>;
+  projectId?: string;
+  members?: Array<{ id: string; name: string; departmentName: string }>;
+  projects?: Array<{ id: string; name: string; members: Array<{ id: string; name: string; departmentName: string }> }>;
 }) {
   const [state, action, pending] = useActionState(createTaskAction, initialState);
+  const [selectedProjectId, setSelectedProjectId] = useState(projectId ?? projects?.[0]?.id ?? "");
+  const [selectedAssigneeId, setSelectedAssigneeId] = useState("");
+  const availableMembers = projectId
+    ? members ?? []
+    : projects?.find((project) => project.id === selectedProjectId)?.members ?? [];
 
   return (
     <form action={action} className="card card-border bg-base-100">
@@ -23,7 +30,14 @@ export function TaskAssignmentForm({
           <h2 className="card-title mt-1">派发新任务</h2>
         </div>
 
-        <input name="projectId" type="hidden" value={projectId} />
+        {projectId ? <input name="projectId" type="hidden" value={projectId} /> : <fieldset className="fieldset">
+          <legend className="fieldset-legend">关联项目</legend>
+          <select aria-label="关联项目" className="select w-full" name="projectId" onChange={(event) => { setSelectedProjectId(event.target.value); setSelectedAssigneeId(""); }} required value={selectedProjectId}>
+            <option value="">请选择已立项项目</option>
+            {projects?.map((project) => <option key={project.id} value={project.id}>{project.name}</option>)}
+          </select>
+          <p className="label">任务会同步显示在对应项目中。</p>
+        </fieldset>}
 
         <fieldset className="fieldset">
           <legend className="fieldset-legend">任务标题</legend>
@@ -51,9 +65,9 @@ export function TaskAssignmentForm({
         <div className="grid gap-4 sm:grid-cols-2">
           <fieldset className="fieldset">
             <legend className="fieldset-legend">负责人</legend>
-            <select aria-label="负责人" className="select w-full" name="assigneeId" required>
+            <select aria-label="负责人" className="select w-full" name="assigneeId" onChange={(event) => setSelectedAssigneeId(event.target.value)} required value={selectedAssigneeId}>
               <option value="">请选择项目成员</option>
-              {members.map((member) => (
+              {availableMembers.map((member) => (
                 <option key={member.id} value={member.id}>
                   {member.name} · {member.departmentName}
                 </option>
@@ -85,7 +99,7 @@ export function TaskAssignmentForm({
           >
             {state.status === "idle" ? "" : state.message}
           </p>
-          <button className="btn" disabled={pending || !members.length} type="submit">
+          <button className="btn" disabled={pending || !availableMembers.length || !selectedProjectId} type="submit">
             {pending ? "派发中…" : "派发任务"}
           </button>
         </div>

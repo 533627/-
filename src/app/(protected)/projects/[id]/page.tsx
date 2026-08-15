@@ -16,7 +16,7 @@ import { getDatabase } from "@/lib/db";
 export default async function ProjectDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const user = await requireCurrentUser();
-  const actor: Actor = { id: user.id, role: user.role, departmentId: user.department?.id ?? null };
+  const actor: Actor = { id: user.id, role: user.role, departmentId: user.department?.id ?? null, operationsTeam: user.operationsTeam };
   const database = getDatabase();
   const projectStore = createPrismaProjectStore(database);
   const taskStore = createPrismaTaskStore(database);

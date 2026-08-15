@@ -59,12 +59,16 @@ export async function AppShell({
               <p className="text-sm font-semibold">{displayName}</p>
               <p className="text-xs text-base-content/55">{ROLE_LABELS[user.role]}</p>
             </div>
-            <span
-              aria-hidden="true"
-              className="grid size-9 place-items-center rounded-full bg-primary/10 text-sm font-semibold text-primary"
-            >
-              {displayName.slice(0, 1)}
-            </span>
+            <details className="dropdown dropdown-end">
+              <summary aria-label="打开账号菜单" className="btn btn-circle btn-ghost list-none">
+                <span aria-hidden="true" className="grid size-9 place-items-center rounded-full bg-primary/10 text-sm font-semibold text-primary">{displayName.slice(0, 1)}</span>
+              </summary>
+              <div className="dropdown-content z-20 mt-2 w-56 rounded-box border border-base-300 bg-base-100 p-2 shadow-lg">
+                <div className="border-b border-base-300 px-3 py-2 sm:hidden"><p className="truncate text-sm font-semibold">{displayName}</p><p className="mt-1 text-xs text-base-content/55">{ROLE_LABELS[user.role]}</p></div>
+                <Link className="btn btn-ghost btn-sm w-full justify-start" href="/profile">个人设置</Link>
+                <LogoutButton compact />
+              </div>
+            </details>
           </div>
         </header>
         <main className="mx-auto w-full max-w-[90rem] px-4 py-6 sm:px-6 lg:px-8 lg:py-8">

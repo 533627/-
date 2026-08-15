@@ -31,8 +31,8 @@ test.describe("任务闭环", () => {
     await database.rateLimit.deleteMany();
     await database.department.create({ data: { id: departmentId, code: `${prefix}_service`, name: `${prefix}客服部` } });
     await createUser(ownerId, ownerUsername, `${prefix}老板`, "SUPER_ADMIN");
-    await createUser(managerId, managerUsername, `${prefix}客服组长`, "DEPARTMENT_MANAGER");
-    await createUser(employeeId, employeeUsername, employeeName, "EMPLOYEE");
+    await createUser(managerId, managerUsername, `${prefix}运营组长`, "OPERATIONS_ADMIN", "TEAM_ONE");
+    await createUser(employeeId, employeeUsername, employeeName, "EMPLOYEE", "TEAM_ONE");
     const model = await database.businessModel.create({ data: {
       title: `${prefix}场景主图模式`, category: "家居", targetPlatform: "淘宝", opportunity: "提升点击率",
       businessLogic: "内容筛选高意向用户", executionPlan: "测试三版主图", createdById: ownerId, updatedById: ownerId,
@@ -123,9 +123,33 @@ test.describe("任务闭环", () => {
     await expect(database.task.findUniqueOrThrow({ where: { id: taskId } })).resolves.toMatchObject({ status: "COMPLETED", version: 7 });
   });
 
-  async function createUser(id: string, username: string, name: string, role: "SUPER_ADMIN" | "DEPARTMENT_MANAGER" | "EMPLOYEE") {
+  test("运营组长在任务中心发布，员工本人直接确认完成", async ({ page }) => {
+    const directTaskTitle = `${prefix}整理今日商品数据`;
+    await signIn(page, managerUsername);
+    await page.goto("/tasks");
+    await expect(page.getByRole("link", { name: "发布任务" })).toBeVisible();
+    await page.getByLabel("关联项目").selectOption(projectId);
+    await page.getByLabel("任务标题").fill(directTaskTitle);
+    await page.getByLabel("负责人").selectOption(employeeId);
+    await page.getByLabel("截止时间").fill(futureLocalDateTime());
+    await page.getByRole("button", { name: "派发任务" }).click();
+    await expect(page.getByText("任务已派发，员工可在任务待办中接收。")).toBeVisible();
+    const directTask = await database.task.findFirstOrThrow({ where: { title: directTaskTitle } });
+
+    await signOut(page);
+    await signIn(page, employeeUsername);
+    await page.goto("/tasks");
+    const card = page.getByTestId(`task-${directTask.id}`);
+    await card.getByRole("button", { name: "确认完成" }).click();
+    await expect(card.getByText("任务已确认完成。")).toBeVisible();
+    await expect(database.task.findUniqueOrThrow({ where: { id: directTask.id } }))
+      .resolves.toMatchObject({ status: "COMPLETED", completedAt: expect.any(Date) });
+  });
+
+  async function createUser(id: string, username: string, name: string, role: "SUPER_ADMIN" | "OPERATIONS_ADMIN" | "EMPLOYEE", operationsTeam: "TEAM_ONE" | "TEAM_TWO" | null = null) {
     await database.user.create({ data: {
       id, username, name, role, departmentId: role === "SUPER_ADMIN" ? null : departmentId,
+      operationsTeam,
       displayUsername: username, email: `${username}@internal.invalid`, emailVerified: true,
       accounts: { create: { id: randomUUID(), accountId: id, providerId: "credential", password: await hashPassword(password) } },
     } });

@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { requireCurrentUser } from "@/features/auth/current-user-server";
 import { TaskActionPanel } from "@/features/tasks/task-action-panel";
+import { TaskAssignmentForm } from "@/features/tasks/task-assignment-form";
 import {
   formatTaskDate,
   TASK_PRIORITY_BADGES,
@@ -12,17 +13,22 @@ import {
 import { createPrismaTaskStore } from "@/features/tasks/task-store";
 import type { TaskStatus } from "@/generated/prisma/client";
 import type { Actor } from "@/lib/authz/types";
+import { hasCapability } from "@/lib/authz/permissions";
 import { getDatabase } from "@/lib/db";
 
 const STATUS_VALUES: TaskStatus[] = ["PENDING_ACCEPTANCE", "ACCEPTED", "IN_PROGRESS", "PENDING_REVIEW", "NEEDS_REVISION", "COMPLETED"];
-const EVENT_LABELS = { ASSIGNED: "派发任务", ACCEPTED: "接收任务", STARTED: "开始执行", SUBMITTED: "提交验收", REJECTED: "退回修改", APPROVED: "验收通过" } as const;
+const EVENT_LABELS = { ASSIGNED: "派发任务", ACCEPTED: "接收任务", STARTED: "开始执行", SUBMITTED: "提交验收", REJECTED: "退回修改", APPROVED: "确认完成" } as const;
 
 export default async function TasksPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const user = await requireCurrentUser();
-  const actor: Actor = { id: user.id, role: user.role, departmentId: user.department?.id ?? null };
+  const actor: Actor = { id: user.id, role: user.role, departmentId: user.department?.id ?? null, operationsTeam: user.operationsTeam };
   const rawStatus = (await searchParams).status;
   const status = typeof rawStatus === "string" && STATUS_VALUES.some((value) => value === rawStatus) ? rawStatus as TaskStatus : undefined;
-  const allTasks = await createPrismaTaskStore(getDatabase()).listTasks(actor);
+  const taskStore = createPrismaTaskStore(getDatabase());
+  const allTasks = await taskStore.listTasks(actor);
+  const assignmentOptions = hasCapability(user.role, "TASK_ASSIGN")
+    ? await taskStore.listAssignmentOptions(actor)
+    : null;
   const tasks = status ? allTasks.filter((task) => task.status === status) : allTasks;
   const metrics = {
     total: allTasks.length,
@@ -32,7 +38,9 @@ export default async function TasksPage({ searchParams }: { searchParams: Promis
   };
 
   return <div className="module-page space-y-6">
-    <header className="module-header"><p>接收、执行、提交与验收都在同一条工作流中</p><h1 className="mt-2">任务待办</h1><p className="mt-3 max-w-2xl leading-7 text-base-content/70">{user.role === "EMPLOYEE" ? "优先处理临期和被退回的任务，提交后等待派发人验收。" : "跟进你负责执行或派发的任务，及时处理待验收与逾期事项。"}</p></header>
+    <header className="module-header"><div className="flex flex-wrap items-end justify-between gap-4"><div><p>发布、执行和完成情况集中管理</p><h1 className="mt-2">任务待办</h1><p className="mt-3 max-w-2xl leading-7 text-base-content/70">{user.role === "EMPLOYEE" ? "完成工作后由你本人点击确认完成，系统会立即记录完成时间。" : user.role === "OPERATIONS_ADMIN" ? "可向本运营组的项目员工发布任务，并跟进完成情况。" : "跟进你负责执行或派发的任务，及时处理逾期事项。"}</p></div>{assignmentOptions ? <a className="btn btn-primary" href="#publish-task">发布任务</a> : null}</div></header>
+
+    {assignmentOptions ? <section aria-labelledby="publish-task-title" id="publish-task"><div className="mb-3"><h2 className="text-xl font-semibold" id="publish-task-title">发布任务</h2><p className="mt-1 text-sm text-base-content/60">选择已立项项目和本组员工，派发后员工会在自己的任务待办中看到。</p></div>{assignmentOptions.length ? <TaskAssignmentForm projects={assignmentOptions.map((project) => ({ id: project.id, name: project.name, members: project.members.map((member) => ({ id: member.id, name: member.name, departmentName: member.department?.name ?? "未分配部门" })) }))} /> : <div className="alert alert-info alert-soft" role="status">目前没有可派单的本组项目成员。请先由最高管理员把员工加入项目，并确认运营分组设置正确。</div>}</section> : null}
 
     <section aria-label="任务指标" className="stats stats-vertical w-full border border-base-300 bg-base-100 sm:stats-horizontal">
       <Metric label="当前任务" value={metrics.total} /><Metric label="执行中" value={metrics.inProgress} /><Metric label="待验收" value={metrics.pendingReview} /><Metric alert label="已逾期" value={metrics.overdue} />

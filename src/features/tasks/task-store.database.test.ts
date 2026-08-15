@@ -21,7 +21,7 @@ describeWithDatabase.sequential("task assignment and execution", () => {
   const employeeId = randomUUID();
   const warehouseEmployeeId = randomUUID();
   const owner = actor(ownerId, "SUPER_ADMIN", null);
-  const operations = actor(operationsId, "OPERATIONS_ADMIN", serviceDepartmentId);
+  const operations = { ...actor(operationsId, "OPERATIONS_ADMIN", serviceDepartmentId), operationsTeam: "TEAM_ONE" as const };
   const manager = actor(managerId, "DEPARTMENT_MANAGER", serviceDepartmentId);
   const employee = actor(employeeId, "EMPLOYEE", serviceDepartmentId);
   let projectId = "";
@@ -35,9 +35,9 @@ describeWithDatabase.sequential("task assignment and execution", () => {
     ] });
     await database.user.createMany({ data: [
       user(ownerId, `${prefix}_owner`, "SUPER_ADMIN", null),
-      user(operationsId, `${prefix}_ops`, "OPERATIONS_ADMIN", serviceDepartmentId),
+      { ...user(operationsId, `${prefix}_ops`, "OPERATIONS_ADMIN", serviceDepartmentId), operationsTeam: "TEAM_ONE" as const },
       user(managerId, `${prefix}_manager`, "DEPARTMENT_MANAGER", serviceDepartmentId),
-      user(employeeId, `${prefix}_employee`, "EMPLOYEE", serviceDepartmentId),
+      { ...user(employeeId, `${prefix}_employee`, "EMPLOYEE", serviceDepartmentId), operationsTeam: "TEAM_ONE" as const },
       user(warehouseEmployeeId, `${prefix}_warehouse_employee`, "EMPLOYEE", warehouseDepartmentId),
     ] });
     const model = await database.businessModel.create({ data: {
@@ -92,11 +92,15 @@ describeWithDatabase.sequential("task assignment and execution", () => {
     })).rejects.toEqual(new TaskStoreError("TASK_ASSIGN_FORBIDDEN"));
   });
 
-  it("lets the operations administrator assign across departments and blocks employees", async () => {
+  it("lets the operations administrator assign within their team and blocks other departments", async () => {
     await expect(store.createTask(operations, {
-      projectId, title: "核对仓库库存", description: "确认三种颜色库存", priority: "URGENT",
+      projectId, title: "核对商品信息", description: "确认三种颜色信息", priority: "URGENT",
+      assigneeId: employeeId, dueAt: futureDate(10),
+    })).resolves.toMatchObject({ assigneeId: employeeId });
+    await expect(store.createTask(operations, {
+      projectId, title: "越组派单", description: "不允许", priority: "MEDIUM",
       assigneeId: warehouseEmployeeId, dueAt: futureDate(10),
-    })).resolves.toMatchObject({ assigneeId: warehouseEmployeeId });
+    })).rejects.toEqual(new TaskStoreError("TASK_ASSIGN_FORBIDDEN"));
     await expect(store.createTask(employee, {
       projectId, title: "伪造派发", description: "不允许", priority: "LOW",
       assigneeId: employeeId, dueAt: futureDate(10),
@@ -120,8 +124,8 @@ describeWithDatabase.sequential("task assignment and execution", () => {
 
   it("scopes task lists and calculates completion metrics from approved tasks", async () => {
     const employeeTasks = await store.listTasks(employee);
-    expect(employeeTasks).toHaveLength(1);
-    expect(employeeTasks[0]).toMatchObject({ id: taskId, isOverdue: false });
+    expect(employeeTasks).toHaveLength(2);
+    expect(employeeTasks.some((task) => task.id === taskId && !task.isOverdue)).toBe(true);
     const summary = await store.getProjectTaskSummary(owner, projectId);
     expect(summary).toMatchObject({ total: 2, completed: 1, completionRate: 50 });
     expect(await store.listTasks(manager)).toHaveLength(1);

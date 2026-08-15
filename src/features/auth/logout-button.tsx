@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 
 import { authClient } from "@/lib/auth-client";
 
-export function LogoutButton() {
+export function LogoutButton({ compact = false }: { compact?: boolean }) {
   const router = useRouter();
   const [isPending, setIsPending] = useState(false);
   const [failed, setFailed] = useState(false);
@@ -32,9 +32,9 @@ export function LogoutButton() {
   }
 
   return (
-    <div className="mt-4">
+    <div className={compact ? "" : "mt-4"}>
       <button
-        className="btn btn-ghost btn-sm btn-block"
+        className={compact ? "btn btn-ghost btn-sm w-full justify-start text-error" : "btn btn-ghost btn-sm btn-block"}
         disabled={isPending}
         onClick={signOut}
         type="button"
