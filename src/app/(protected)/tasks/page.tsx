@@ -2,7 +2,6 @@ import Link from "next/link";
 
 import { requireCurrentUser } from "@/features/auth/current-user-server";
 import { TaskActionPanel } from "@/features/tasks/task-action-panel";
-import { TaskAssignmentForm } from "@/features/tasks/task-assignment-form";
 import {
   formatTaskDate,
   TASK_PRIORITY_BADGES,
@@ -10,6 +9,8 @@ import {
   TASK_STATUS_BADGES,
   TASK_STATUS_LABELS,
 } from "@/features/tasks/task-labels";
+import { TaskPublishDialog } from "@/features/tasks/task-publish-dialog";
+import { formatChinaDateTimeLocal, nextReusableDueAt } from "@/features/tasks/task-reuse";
 import { createPrismaTaskStore } from "@/features/tasks/task-store";
 import type { TaskStatus } from "@/generated/prisma/client";
 import type { Actor } from "@/lib/authz/types";
@@ -25,10 +26,13 @@ export default async function TasksPage({ searchParams }: { searchParams: Promis
   const rawStatus = (await searchParams).status;
   const status = typeof rawStatus === "string" && STATUS_VALUES.some((value) => value === rawStatus) ? rawStatus as TaskStatus : undefined;
   const taskStore = createPrismaTaskStore(getDatabase());
-  const allTasks = await taskStore.listTasks(actor);
-  const assignmentOptions = hasCapability(user.role, "TASK_ASSIGN")
-    ? await taskStore.listAssignmentOptions(actor)
-    : null;
+  const canAssign = hasCapability(user.role, "TASK_ASSIGN");
+  const now = new Date();
+  const [allTasks, assignmentOptions, yesterdayTaskTemplates] = await Promise.all([
+    taskStore.listTasks(actor),
+    canAssign ? taskStore.listAssignmentOptions(actor) : Promise.resolve(null),
+    canAssign ? taskStore.listYesterdayTaskTemplates(actor, now) : Promise.resolve([]),
+  ]);
   const tasks = status ? allTasks.filter((task) => task.status === status) : allTasks;
   const metrics = {
     total: allTasks.length,
@@ -38,9 +42,7 @@ export default async function TasksPage({ searchParams }: { searchParams: Promis
   };
 
   return <div className="module-page space-y-6">
-    <header className="module-header"><div className="flex flex-wrap items-end justify-between gap-4"><div><p>发布、执行和完成情况集中管理</p><h1 className="mt-2">任务待办</h1><p className="mt-3 max-w-2xl leading-7 text-base-content/70">{user.role === "EMPLOYEE" ? "完成工作后由你本人点击确认完成，系统会立即记录完成时间。" : user.role === "OPERATIONS_ADMIN" ? "可向本运营组的项目员工发布任务，并跟进完成情况。" : "跟进你负责执行或派发的任务，及时处理逾期事项。"}</p></div>{assignmentOptions ? <a className="btn btn-primary" href="#publish-task">发布任务</a> : null}</div></header>
-
-    {assignmentOptions ? <section aria-labelledby="publish-task-title" id="publish-task"><div className="mb-3"><h2 className="text-xl font-semibold" id="publish-task-title">发布任务</h2><p className="mt-1 text-sm text-base-content/60">选择已立项项目和本组员工，派发后员工会在自己的任务待办中看到。</p></div>{assignmentOptions.length ? <TaskAssignmentForm projects={assignmentOptions.map((project) => ({ id: project.id, name: project.name, members: project.members.map((member) => ({ id: member.id, name: member.name, departmentName: member.department?.name ?? "未分配部门" })) }))} /> : <div className="alert alert-info alert-soft" role="status">目前没有可派单的本组项目成员。请先由最高管理员把员工加入项目，并确认运营分组设置正确。</div>}</section> : null}
+    <header className="module-header"><div className="flex flex-wrap items-end justify-between gap-4"><div><p>发布、执行和完成情况集中管理</p><h1 className="mt-2">任务待办</h1><p className="mt-3 max-w-2xl leading-7 text-base-content/70">{user.role === "EMPLOYEE" ? "完成工作后由你本人点击确认完成，系统会立即记录完成时间。" : user.role === "OPERATIONS_ADMIN" ? "可向本运营组的项目员工发布任务，并跟进完成情况。" : "跟进你负责执行或派发的任务，及时处理逾期事项。"}</p></div>{assignmentOptions ? <TaskPublishDialog projects={assignmentOptions.map((project) => ({ id: project.id, name: project.name, members: project.members.map((member) => ({ id: member.id, name: member.name, departmentName: member.department?.name ?? "未分配部门" })) }))} yesterdayTasks={yesterdayTaskTemplates.map((task) => ({ id: task.id, projectId: task.projectId, projectName: task.project.name, assigneeId: task.assigneeId, assigneeName: task.assignee.name, title: task.title, description: task.description, priority: task.priority, dueAt: formatChinaDateTimeLocal(nextReusableDueAt(task.dueAt, now)) }))} /> : null}</div></header>
 
     <section aria-label="任务指标" className="stats stats-vertical w-full border border-base-300 bg-base-100 sm:stats-horizontal">
       <Metric label="当前任务" value={metrics.total} /><Metric label="执行中" value={metrics.inProgress} /><Metric label="待验收" value={metrics.pendingReview} /><Metric alert label="已逾期" value={metrics.overdue} />

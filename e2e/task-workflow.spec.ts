@@ -127,7 +127,8 @@ test.describe("任务闭环", () => {
     const directTaskTitle = `${prefix}整理今日商品数据`;
     await signIn(page, managerUsername);
     await page.goto("/tasks");
-    await expect(page.getByRole("link", { name: "发布任务" })).toBeVisible();
+    await page.getByRole("button", { name: "发布任务" }).click();
+    await expect(page.getByRole("dialog", { name: "发布任务" })).toBeVisible();
     await page.getByLabel("关联项目").selectOption(projectId);
     await page.getByLabel("任务标题").fill(directTaskTitle);
     await page.getByLabel("负责人").selectOption(employeeId);
@@ -135,6 +136,17 @@ test.describe("任务闭环", () => {
     await page.getByRole("button", { name: "派发任务" }).click();
     await expect(page.getByText("任务已派发，员工可在任务待办中接收。")).toBeVisible();
     const directTask = await database.task.findFirstOrThrow({ where: { title: directTaskTitle } });
+
+    await database.task.update({ where: { id: directTask.id }, data: { createdAt: new Date(Date.now() - 24 * 60 * 60 * 1000) } });
+    await page.reload();
+    await page.getByRole("button", { name: "发布任务" }).click();
+    await page.getByRole("button", { name: new RegExp(directTaskTitle) }).click();
+    await expect(page.getByLabel("任务标题")).toHaveValue(directTaskTitle);
+    await expect(page.getByLabel("负责人")).toHaveValue(employeeId);
+    await page.getByLabel("任务标题").fill(`${directTaskTitle}（复用）`);
+    await page.getByRole("button", { name: "派发任务" }).click();
+    await expect(page.getByText("任务已派发，员工可在任务待办中接收。")).toBeVisible();
+    await page.getByRole("button", { name: "关闭发布任务窗口" }).click();
 
     await signOut(page);
     await signIn(page, employeeUsername);

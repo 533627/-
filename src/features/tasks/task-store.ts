@@ -6,6 +6,7 @@ import {
   transitionTask,
   type TaskAction,
 } from "@/features/tasks/task-state-machine";
+import { previousChinaDayRange } from "@/features/tasks/task-reuse";
 
 export class TaskStoreError extends Error {
   constructor(
@@ -183,6 +184,62 @@ export function createPrismaTaskStore(database: PrismaClient) {
           && (actor.role !== "OPERATIONS_ADMIN" || user.role === "EMPLOYEE")
           && canAssignOperationsTeamTask(actor, user.departmentId, user.operationsTeam)),
       })).filter((project) => project.members.length);
+    },
+
+    async listYesterdayTaskTemplates(actor: Actor, now = new Date()) {
+      if (!hasCapability(actor.role, "TASK_ASSIGN")) throw new TaskStoreError("TASK_ASSIGN_FORBIDDEN");
+      const { start, end } = previousChinaDayRange(now);
+      const tasks = await database.task.findMany({
+        where: {
+          assignedById: actor.id,
+          createdAt: { gte: start, lt: end },
+          assignee: { isActive: true, departmentId: { not: null } },
+          project: {
+            status: { notIn: ["COMPLETED", "ARCHIVED"] },
+            sourceBusinessModel: { status: { not: "DELETED" } },
+            ...(actor.role === "SUPER_ADMIN" ? {} : { members: { some: { userId: actor.id, removedAt: null } } }),
+          },
+        },
+        orderBy: { createdAt: "desc" },
+        take: 50,
+        select: {
+          id: true,
+          projectId: true,
+          title: true,
+          description: true,
+          priority: true,
+          assigneeId: true,
+          dueAt: true,
+          project: {
+            select: {
+              name: true,
+            },
+          },
+          assignee: {
+            select: {
+              name: true,
+              role: true,
+              departmentId: true,
+              operationsTeam: true,
+            },
+          },
+        },
+      });
+
+      if (!tasks.length) return [];
+      const memberships = await database.projectMember.findMany({
+        where: {
+          removedAt: null,
+          OR: tasks.map((task) => ({ projectId: task.projectId, userId: task.assigneeId })),
+        },
+        select: { projectId: true, userId: true },
+      });
+      const activeMemberships = new Set(memberships.map((membership) => `${membership.projectId}:${membership.userId}`));
+
+      return tasks.filter((task) => task.assignee.departmentId
+        && activeMemberships.has(`${task.projectId}:${task.assigneeId}`)
+        && (actor.role !== "OPERATIONS_ADMIN" || task.assignee.role === "EMPLOYEE")
+        && canAssignOperationsTeamTask(actor, task.assignee.departmentId, task.assignee.operationsTeam));
     },
 
     async getProjectTaskSummary(actor: Actor, projectId: string) {

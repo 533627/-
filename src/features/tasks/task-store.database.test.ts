@@ -4,6 +4,7 @@ import { PrismaPg } from "@prisma/adapter-pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import { PrismaClient } from "@/generated/prisma/client";
+import { previousChinaDayRange } from "@/features/tasks/task-reuse";
 import { createPrismaTaskStore, TaskStoreError } from "@/features/tasks/task-store";
 
 const testDatabaseUrl = process.env.TEST_DATABASE_URL;
@@ -129,6 +130,25 @@ describeWithDatabase.sequential("task assignment and execution", () => {
     const summary = await store.getProjectTaskSummary(owner, projectId);
     expect(summary).toMatchObject({ total: 2, completed: 1, completionRate: 50 });
     expect(await store.listTasks(manager)).toHaveLength(1);
+  });
+
+  it("only offers the current publisher's tasks from yesterday for reuse", async () => {
+    const now = new Date("2026-08-15T02:30:00.000Z");
+    const { start } = previousChinaDayRange(now);
+    await database.task.updateMany({
+      where: { projectId },
+      data: { createdAt: new Date(start.getTime() + 60 * 60 * 1000) },
+    });
+
+    const managerTemplates = await store.listYesterdayTaskTemplates(manager, now);
+    expect(managerTemplates).toHaveLength(1);
+    expect(managerTemplates[0]?.title).toBe("制作三版商品主图");
+
+    const operationsTemplates = await store.listYesterdayTaskTemplates(operations, now);
+    expect(operationsTemplates).toHaveLength(1);
+    expect(operationsTemplates[0]?.title).toBe("核对商品信息");
+    await expect(store.listYesterdayTaskTemplates(employee, now))
+      .rejects.toEqual(new TaskStoreError("TASK_ASSIGN_FORBIDDEN"));
   });
 
   function actor(id: string, role: "SUPER_ADMIN" | "OPERATIONS_ADMIN" | "DEPARTMENT_MANAGER" | "EMPLOYEE", departmentId: string | null) {

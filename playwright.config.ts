@@ -7,13 +7,18 @@ requireDedicatedTestDatabase(
   process.env.DATABASE_URL,
 );
 
+const port = Number(process.env.PLAYWRIGHT_PORT ?? 3000);
+const serverCommand = process.env.PLAYWRIGHT_USE_BUILD
+  ? `node node_modules/next/dist/bin/next start --port ${port}`
+  : `node node_modules/next/dist/bin/next dev --port ${port}`;
+
 export default defineConfig({
   testDir: "./e2e",
   fullyParallel: true,
   workers: 1,
   reporter: "html",
   use: {
-    baseURL: "http://127.0.0.1:3000",
+    baseURL: `http://127.0.0.1:${port}`,
     trace: "on-first-retry",
   },
   projects: [
@@ -23,8 +28,9 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: "node node_modules/next/dist/bin/next dev",
-    url: "http://127.0.0.1:3000",
+    command: serverCommand,
+    env: { DATABASE_URL: process.env.TEST_DATABASE_URL ?? "" },
+    url: `http://127.0.0.1:${port}`,
     reuseExistingServer: !process.env.CI,
   },
 });
