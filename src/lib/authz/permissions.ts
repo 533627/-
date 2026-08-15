@@ -104,6 +104,22 @@ export function canAssignTask(actor: Actor, assigneeDepartmentId: string) {
   return hasDepartmentScope(actor, assigneeDepartmentId, "TASK_ASSIGN");
 }
 
+export function canAssignOperationsTeamTask(
+  actor: Actor,
+  assigneeDepartmentId: string,
+  assigneeOperationsTeam: OperationsTeam | null,
+) {
+  if (!hasCapability(actor.role, "TASK_ASSIGN")) return false;
+  if (actor.role === "SUPER_ADMIN") return true;
+  if (actor.role === "OPERATIONS_ADMIN") {
+    return actor.departmentId === assigneeDepartmentId
+      && actor.operationsTeam !== null
+      && actor.operationsTeam !== undefined
+      && actor.operationsTeam === assigneeOperationsTeam;
+  }
+  return actor.departmentId !== null && actor.departmentId === assigneeDepartmentId;
+}
+
 export function canAccessDepartmentConversation(
   actor: Actor,
   targetDepartmentId: string,

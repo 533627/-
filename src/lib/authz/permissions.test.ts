@@ -8,6 +8,7 @@ import {
 import {
   PERMISSION_MATRIX,
   canAdministerAccount,
+  canAssignOperationsTeamTask,
   canAssignTask,
   canAccessDepartmentConversation,
   canAccessProjectConversation,
@@ -161,6 +162,13 @@ describe("task assignment scope", () => {
 
   it("never allows employees to assign tasks", () => {
     expect(canAssignTask(employee, "customer-service")).toBe(false);
+  });
+
+  it("limits operations group leaders to employees in their own operations group", () => {
+    expect(canAssignOperationsTeamTask(operationsAdmin, "operations", "TEAM_ONE")).toBe(true);
+    expect(canAssignOperationsTeamTask(operationsAdmin, "operations", "TEAM_TWO")).toBe(false);
+    expect(canAssignOperationsTeamTask(operationsAdmin, "warehouse", null)).toBe(false);
+    expect(canAssignOperationsTeamTask(superAdmin, "warehouse", null)).toBe(true);
   });
 });
 

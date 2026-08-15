@@ -27,6 +27,13 @@ describe("task state machine", () => {
       .toMatchObject({ status: "COMPLETED", eventType: "APPROVED" });
   });
 
+  it("lets only the assigned employee confirm their own task as completed", () => {
+    expect(transitionTask(assignee, task("PENDING_ACCEPTANCE"), { type: "COMPLETE" }))
+      .toMatchObject({ status: "COMPLETED", eventType: "APPROVED" });
+    expect(() => transitionTask(assigner, task("IN_PROGRESS"), { type: "COMPLETE" }))
+      .toThrowError(new TaskWorkflowError("TASK_EXECUTE_FORBIDDEN"));
+  });
+
   it("requires a rejection reason and lets the assignee resubmit", () => {
     expect(() => transitionTask(assigner, task("PENDING_REVIEW"), { type: "REJECT", note: "" }))
       .toThrowError(new TaskWorkflowError("TASK_NOTE_REQUIRED"));

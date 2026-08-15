@@ -27,7 +27,7 @@ const transitionSchema = z.object({
   taskId: z.uuid(),
   projectId: z.uuid(),
   version: z.coerce.number().int().positive(),
-  action: z.enum(["ACCEPT", "START", "SUBMIT", "REJECT", "APPROVE"]),
+  action: z.enum(["ACCEPT", "START", "SUBMIT", "REJECT", "APPROVE", "COMPLETE"]),
   note: z.string().max(2000).optional(),
 });
 
@@ -70,13 +70,13 @@ export async function transitionTaskAction(_state: TaskActionState, formData: Fo
 
 async function currentActor(): Promise<Actor> {
   const user = await requireCurrentUser();
-  return { id: user.id, role: user.role, departmentId: user.department?.id ?? null };
+  return { id: user.id, role: user.role, departmentId: user.department?.id ?? null, operationsTeam: user.operationsTeam };
 }
 
 function successMessage(action: z.infer<typeof transitionSchema>["action"]) {
   return {
     ACCEPT: "任务已接收。", START: "任务已开始执行。", SUBMIT: "成果已提交，等待验收。",
-    REJECT: "任务已退回修改，原因已记录。", APPROVE: "任务已验收完成。",
+    REJECT: "任务已退回修改，原因已记录。", APPROVE: "任务已验收完成。", COMPLETE: "任务已确认完成。",
   }[action];
 }
 

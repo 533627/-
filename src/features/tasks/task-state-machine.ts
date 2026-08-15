@@ -9,7 +9,7 @@ export const TASK_STATUSES = [
   "COMPLETED",
 ] as const;
 export type TaskStatusValue = (typeof TASK_STATUSES)[number];
-export type TaskAction = "ACCEPT" | "START" | "SUBMIT" | "REJECT" | "APPROVE";
+export type TaskAction = "ACCEPT" | "START" | "SUBMIT" | "REJECT" | "APPROVE" | "COMPLETE";
 
 type TaskWorkflowTarget = {
   status: TaskStatusValue;
@@ -36,6 +36,7 @@ const TRANSITIONS = {
   SUBMIT: { from: ["IN_PROGRESS", "NEEDS_REVISION"], to: "PENDING_REVIEW", eventType: "SUBMITTED" },
   REJECT: { from: ["PENDING_REVIEW"], to: "NEEDS_REVISION", eventType: "REJECTED" },
   APPROVE: { from: ["PENDING_REVIEW"], to: "COMPLETED", eventType: "APPROVED" },
+  COMPLETE: { from: ["PENDING_ACCEPTANCE", "ACCEPTED", "IN_PROGRESS", "NEEDS_REVISION"], to: "COMPLETED", eventType: "APPROVED" },
 } as const;
 
 export function transitionTask(

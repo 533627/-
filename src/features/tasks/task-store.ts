@@ -1,5 +1,5 @@
 import { type PrismaClient, type TaskPriority, type TaskStatus } from "@/generated/prisma/client";
-import { canAssignTask, hasCapability } from "@/lib/authz/permissions";
+import { canAssignOperationsTeamTask, hasCapability } from "@/lib/authz/permissions";
 import type { Actor } from "@/lib/authz/types";
 import {
   isTaskOverdue,
@@ -63,10 +63,10 @@ export function createPrismaTaskStore(database: PrismaClient) {
             departmentId: { not: null },
             projectMemberships: { some: { projectId: input.projectId, removedAt: null } },
           },
-          select: { id: true, departmentId: true },
+          select: { id: true, departmentId: true, operationsTeam: true },
         });
         if (!assignee?.departmentId) throw new TaskStoreError("TASK_ASSIGNEE_INVALID");
-        if (!canAssignTask(actor, assignee.departmentId)) throw new TaskStoreError("TASK_ASSIGN_FORBIDDEN");
+        if (!canAssignOperationsTeamTask(actor, assignee.departmentId, assignee.operationsTeam)) throw new TaskStoreError("TASK_ASSIGN_FORBIDDEN");
 
         const task = await transaction.task.create({
           data: { ...input, assignedById: actor.id },
@@ -97,7 +97,7 @@ export function createPrismaTaskStore(database: PrismaClient) {
           ...(action.type === "START" ? { startedAt: now } : {}),
           ...(action.type === "SUBMIT" ? { submittedAt: now, submissionNote: transition.note, rejectionReason: null } : {}),
           ...(action.type === "REJECT" ? { rejectionReason: transition.note } : {}),
-          ...(action.type === "APPROVE" ? { completedAt: now } : {}),
+          ...(action.type === "APPROVE" || action.type === "COMPLETE" ? { completedAt: now } : {}),
         };
         const updated = await transaction.task.updateMany({
           where: { id: taskId, version: expectedVersion, status: current.status },
@@ -148,9 +148,9 @@ export function createPrismaTaskStore(database: PrismaClient) {
         where: { projectId, removedAt: null, user: { isActive: true, departmentId: { not: null } } },
         orderBy: { user: { name: "asc" } },
         take: 500,
-        select: { user: { select: { id: true, name: true, departmentId: true, department: { select: { name: true } } } } },
+        select: { user: { select: { id: true, name: true, departmentId: true, operationsTeam: true, department: { select: { name: true } } } } },
       });
-      return members.map(({ user }) => user).filter((user) => user.departmentId && canAssignTask(actor, user.departmentId));
+      return members.map(({ user }) => user).filter((user) => user.departmentId && canAssignOperationsTeamTask(actor, user.departmentId, user.operationsTeam));
     },
 
     async getProjectTaskSummary(actor: Actor, projectId: string) {
