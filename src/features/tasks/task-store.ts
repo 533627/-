@@ -18,7 +18,9 @@ export class TaskStoreError extends Error {
       | "TASK_INPUT_INVALID"
       | "TASK_NOT_FOUND"
       | "TASK_VIEW_FORBIDDEN"
-      | "TASK_CONFLICT",
+      | "TASK_CONFLICT"
+      | "TASK_SUBTASK_FORBIDDEN"
+      | "TASK_SUBTASKS_INCOMPLETE",
   ) {
     super(code);
     this.name = "TaskStoreError";
@@ -31,7 +33,9 @@ export type CreateTaskInput = {
   description: string;
   priority: TaskPriority;
   assigneeId: string;
+  startsAt?: Date;
   dueAt: Date;
+  subtasks?: Array<{ title: string; description: string }>;
 };
 
 const taskDetails = {
@@ -39,6 +43,7 @@ const taskDetails = {
   assignee: { select: { id: true, name: true, department: { select: { id: true, name: true } } } },
   assignedBy: { select: { id: true, name: true } },
   events: { orderBy: { version: "desc" as const }, take: 50, include: { actor: { select: { id: true, name: true } } } },
+  subtasks: { orderBy: { position: "asc" as const }, include: { completedBy: { select: { id: true, name: true } } } },
 } as const;
 
 export function createPrismaTaskStore(database: PrismaClient) {
@@ -72,8 +77,17 @@ export function createPrismaTaskStore(database: PrismaClient) {
         if (actor.role === "OPERATIONS_ADMIN" && assignee.role !== "EMPLOYEE") throw new TaskStoreError("TASK_ASSIGN_FORBIDDEN");
         if (!canAssignOperationsTeamTask(actor, assignee.departmentId, assignee.operationsTeam)) throw new TaskStoreError("TASK_ASSIGN_FORBIDDEN");
 
+        const { subtasks, ...taskInput } = input;
         const task = await transaction.task.create({
-          data: { ...input, assignedById: actor.id },
+          data: {
+            ...taskInput,
+            assignedById: actor.id,
+            ...(subtasks?.length ? {
+              subtasks: {
+                create: subtasks.map((subtask, position) => ({ ...subtask, position })),
+              },
+            } : {}),
+          },
         });
         await transaction.taskEvent.create({
           data: { taskId: task.id, actorId: actor.id, type: "ASSIGNED", version: task.version },
@@ -91,6 +105,9 @@ export function createPrismaTaskStore(database: PrismaClient) {
       return database.$transaction(async (transaction) => {
         const current = await transaction.task.findUnique({ where: { id: taskId } });
         if (!current) throw new TaskStoreError("TASK_NOT_FOUND");
+        if (action.type === "COMPLETE" && await transaction.taskSubtask.count({ where: { taskId } })) {
+          throw new TaskStoreError("TASK_SUBTASKS_INCOMPLETE");
+        }
         const transition = transitionTask(actor, current, action);
         const now = new Date();
         const nextVersion = expectedVersion + 1;
@@ -112,6 +129,50 @@ export function createPrismaTaskStore(database: PrismaClient) {
           data: { taskId, actorId: actor.id, type: transition.eventType, version: nextVersion, note: transition.note },
         });
         return transaction.task.findUniqueOrThrow({ where: { id: taskId } });
+      });
+    },
+
+    async completeSubtask(actor: Actor, subtaskId: string) {
+      return database.$transaction(async (transaction) => {
+        const initial = await transaction.taskSubtask.findUnique({
+          where: { id: subtaskId },
+          select: { taskId: true },
+        });
+        if (!initial) throw new TaskStoreError("TASK_NOT_FOUND");
+
+        await transaction.$queryRaw`SELECT "id" FROM "tasks" WHERE "id" = ${initial.taskId}::uuid FOR UPDATE`;
+        const current = await transaction.taskSubtask.findUnique({
+          where: { id: subtaskId },
+          include: { task: { select: { id: true, assigneeId: true, status: true, version: true } } },
+        });
+        if (!current) throw new TaskStoreError("TASK_NOT_FOUND");
+        if (actor.id !== current.task.assigneeId) throw new TaskStoreError("TASK_SUBTASK_FORBIDDEN");
+        if (current.isCompleted) {
+          return { subtask: current, parentCompleted: current.task.status === "COMPLETED" };
+        }
+
+        const now = new Date();
+        const subtask = await transaction.taskSubtask.update({
+          where: { id: subtaskId },
+          data: { isCompleted: true, completedAt: now, completedById: actor.id },
+          include: { task: { select: { status: true } } },
+        });
+        const remaining = await transaction.taskSubtask.count({
+          where: { taskId: current.task.id, isCompleted: false },
+        });
+        if (remaining || current.task.status === "COMPLETED") {
+          return { subtask, parentCompleted: current.task.status === "COMPLETED" };
+        }
+
+        const nextVersion = current.task.version + 1;
+        await transaction.task.update({
+          where: { id: current.task.id },
+          data: { status: "COMPLETED", completedAt: now, version: nextVersion },
+        });
+        await transaction.taskEvent.create({
+          data: { taskId: current.task.id, actorId: actor.id, type: "APPROVED", version: nextVersion, note: "全部小任务已确认完成" },
+        });
+        return { subtask, parentCompleted: true };
       });
     },
 
@@ -228,6 +289,8 @@ export function createPrismaTaskStore(database: PrismaClient) {
           priority: true,
           assigneeId: true,
           dueAt: true,
+          startsAt: true,
+          subtasks: { orderBy: { position: "asc" }, select: { title: true, description: true } },
           project: {
             select: {
               name: true,
@@ -280,10 +343,14 @@ export function createPrismaTaskStore(database: PrismaClient) {
 function validateTaskInput(input: CreateTaskInput) {
   const title = input.title.trim();
   const description = input.description.trim();
-  if (!title || title.length > 200 || description.length > 4000 || Number.isNaN(input.dueAt.getTime()) || input.dueAt <= new Date()) {
+  const startsAt = input.startsAt;
+  const subtasks = input.subtasks?.map((subtask) => ({ title: subtask.title.trim(), description: subtask.description.trim() }));
+  if (!title || title.length > 200 || description.length > 4000 || Number.isNaN(input.dueAt.getTime()) || input.dueAt <= new Date()
+    || (startsAt && (Number.isNaN(startsAt.getTime()) || startsAt >= input.dueAt))
+    || (subtasks && (!subtasks.length || subtasks.length > 20 || subtasks.some((subtask) => !subtask.title || subtask.title.length > 200 || subtask.description.length > 1000)))) {
     throw new TaskStoreError("TASK_INPUT_INVALID");
   }
-  return { ...input, title, description };
+  return { ...input, title, description, startsAt, subtasks };
 }
 
 async function assertProjectAccess(database: PrismaClient, actor: Actor, projectId: string) {

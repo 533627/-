@@ -13,6 +13,7 @@ export function TaskActionPanel({
   status,
   isAssignee,
   canReview,
+  hasSubtasks = false,
 }: {
   taskId: string;
   projectId: string | null;
@@ -20,8 +21,10 @@ export function TaskActionPanel({
   status: "PENDING_ACCEPTANCE" | "ACCEPTED" | "IN_PROGRESS" | "PENDING_REVIEW" | "NEEDS_REVISION" | "COMPLETED";
   isAssignee: boolean;
   canReview: boolean;
+  hasSubtasks?: boolean;
 }) {
   const [state, action, pending] = useActionState(transitionTaskAction, initialState);
+  if (hasSubtasks) return null;
   const common = <>
     <input name="taskId" type="hidden" value={taskId} />
     <input name="projectId" type="hidden" value={projectId ?? ""} />

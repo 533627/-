@@ -160,6 +160,7 @@ model User {
   assignedTasks               Task[]                        @relation("TaskAssignee")
   createdTasks                Task[]                        @relation("TaskAssignedBy")
   taskEvents                  TaskEvent[]                   @relation("TaskEventActor")
+  completedTaskSubtasks       TaskSubtask[]                 @relation("TaskSubtaskCompletedBy")
 
   @@index([role])
   @@index([isActive])
@@ -309,6 +310,7 @@ model Task {
   assignedById    String
   assignedBy      User         @relation("TaskAssignedBy", fields: [assignedById], references: [id], onDelete: Restrict)
   dueAt           DateTime     @db.Timestamptz(3)
+  startsAt        DateTime?    @db.Timestamptz(3)
   submissionNote  String?      @db.Text
   rejectionReason String?      @db.Text
   acceptedAt      DateTime?    @db.Timestamptz(3)
@@ -318,11 +320,32 @@ model Task {
   createdAt       DateTime     @default(now()) @db.Timestamptz(3)
   updatedAt       DateTime     @updatedAt @db.Timestamptz(3)
   events          TaskEvent[]
+  subtasks        TaskSubtask[]
 
   @@index([assigneeId, status, dueAt])
   @@index([assignedById, status, dueAt])
   @@index([projectId, status, dueAt])
   @@map("tasks")
+}
+
+model TaskSubtask {
+  id            String    @id @default(uuid()) @db.Uuid
+  taskId        String    @db.Uuid
+  task          Task      @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  title         String    @db.VarChar(200)
+  description   String    @default("") @db.Text
+  position      Int
+  isCompleted   Boolean   @default(false)
+  completedAt   DateTime? @db.Timestamptz(3)
+  completedById String?
+  completedBy   User?     @relation("TaskSubtaskCompletedBy", fields: [completedById], references: [id], onDelete: Restrict)
+  createdAt     DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt     DateTime  @updatedAt @db.Timestamptz(3)
+
+  @@unique([taskId, position])
+  @@index([taskId, isCompleted])
+  @@index([completedById])
+  @@map("task_subtasks")
 }
 
 model TaskEvent {

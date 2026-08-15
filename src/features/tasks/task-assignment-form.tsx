@@ -14,8 +14,12 @@ export type TaskAssignmentInitialValues = {
   title?: string;
   description?: string;
   priority?: "LOW" | "MEDIUM" | "HIGH" | "URGENT";
+  startsAt?: string;
   dueAt?: string;
+  subtasks?: Array<{ title: string; description: string }>;
 };
+
+type SubtaskDraft = { id: string; title: string; description: string };
 
 export function TaskAssignmentForm({
   projectId,
@@ -45,6 +49,9 @@ export function TaskAssignmentForm({
     : "";
   const [selectedProjectId, setSelectedProjectId] = useState(defaultProjectId);
   const [selectedAssigneeId, setSelectedAssigneeId] = useState(defaultAssigneeId);
+  const [subtasks, setSubtasks] = useState<SubtaskDraft[]>(() => initialValues?.subtasks?.length
+    ? initialValues.subtasks.map((subtask, index) => ({ ...subtask, id: `initial-${index}` }))
+    : [{ id: "initial-0", title: "", description: "" }]);
   const availableMembers = projectId
     ? members ?? []
     : selectedProjectId
@@ -82,6 +89,47 @@ export function TaskAssignmentForm({
           />
         </fieldset>
 
+        <section aria-labelledby="subtasks-title" className="rounded-box border border-base-300 bg-base-200/45 p-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h3 className="font-semibold" id="subtasks-title">小任务清单</h3>
+              <p className="mt-1 text-sm text-base-content/55">负责人需要逐条确认完成，全部完成后主任务自动完成。</p>
+            </div>
+            <button
+              className="btn btn-outline btn-sm"
+              disabled={subtasks.length >= 20}
+              onClick={() => setSubtasks((items) => [...items, { id: `draft-${items.length}-${Date.now()}`, title: "", description: "" }])}
+              type="button"
+            >添加小任务</button>
+          </div>
+          <input name="subtasksJson" type="hidden" value={JSON.stringify(subtasks.map(({ title, description }) => ({ title, description })))} />
+          <div className="mt-4 space-y-3">
+            {subtasks.map((subtask, index) => <div className="rounded-box border border-base-300 bg-base-100 p-3" key={subtask.id}>
+              <div className="flex items-center justify-between gap-3">
+                <span className="badge badge-neutral badge-sm">第 {index + 1} 项</span>
+                <button aria-label={`删除第 ${index + 1} 条小任务`} className="btn btn-ghost btn-xs text-error" disabled={subtasks.length === 1} onClick={() => setSubtasks((items) => items.filter((item) => item.id !== subtask.id))} type="button">删除</button>
+              </div>
+              <input
+                aria-label={`第 ${index + 1} 条小任务标题`}
+                className="input mt-3 w-full"
+                maxLength={200}
+                onChange={(event) => setSubtasks((items) => items.map((item) => item.id === subtask.id ? { ...item, title: event.target.value } : item))}
+                placeholder="例如：整理商品图片和文案"
+                required
+                value={subtask.title}
+              />
+              <textarea
+                aria-label={`第 ${index + 1} 条小任务说明`}
+                className="textarea mt-2 min-h-16 w-full"
+                maxLength={1000}
+                onChange={(event) => setSubtasks((items) => items.map((item) => item.id === subtask.id ? { ...item, description: event.target.value } : item))}
+                placeholder="可选：补充完成标准或注意事项"
+                value={subtask.description}
+              />
+            </div>)}
+          </div>
+        </section>
+
         <fieldset className="fieldset">
           <legend className="fieldset-legend">任务说明</legend>
           <textarea
@@ -118,11 +166,17 @@ export function TaskAssignmentForm({
           </fieldset>
         </div>
 
-        <fieldset className="fieldset">
-          <legend className="fieldset-legend">截止时间</legend>
-          <input aria-label="截止时间" className="input w-full" defaultValue={initialValues?.dueAt} name="dueAt" required type="datetime-local" />
-          <p className="label">按北京时间记录，必须晚于当前时间。</p>
-        </fieldset>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <fieldset className="fieldset">
+            <legend className="fieldset-legend">开始时间</legend>
+            <input aria-label="开始时间" className="input w-full" defaultValue={initialValues?.startsAt} name="startsAt" required type="datetime-local" />
+          </fieldset>
+          <fieldset className="fieldset">
+            <legend className="fieldset-legend">结束时间</legend>
+            <input aria-label="结束时间" className="input w-full" defaultValue={initialValues?.dueAt} name="dueAt" required type="datetime-local" />
+          </fieldset>
+          <p className="label sm:col-span-2">按北京时间记录，结束时间必须晚于开始时间和当前时间。</p>
+        </div>
 
         <div className="card-actions items-center justify-between">
           <p

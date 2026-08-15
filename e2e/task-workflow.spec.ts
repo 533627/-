@@ -76,14 +76,19 @@ test.describe("任务闭环", () => {
     await database.$disconnect();
   });
 
-  test("组长派发，员工提交，被退回后再次提交并验收", async ({ page }) => {
+  test("组长派发含多个小任务的主任务，员工逐条完成", async ({ page }) => {
     await signIn(page, managerUsername);
     await page.goto(`/projects/${projectId}`);
     await page.getByLabel("任务标题").fill(taskTitle);
     await page.getByLabel("任务说明").fill("突出收纳前后对比，交付三版 1:1 主图");
+    await page.getByLabel("第 1 条小任务标题").fill("整理商品素材");
+    await page.getByLabel("第 1 条小任务说明").fill("检查图片和文案");
+    await page.getByRole("button", { name: "添加小任务" }).click();
+    await page.getByLabel("第 2 条小任务标题").fill("制作三版商品主图");
     await page.getByLabel("负责人").selectOption(employeeId);
     await page.getByLabel("优先级").selectOption("HIGH");
-    await page.getByLabel("截止时间").fill(futureLocalDateTime());
+    await page.getByLabel("开始时间").fill(futureLocalDateTime(1));
+    await page.getByLabel("结束时间").fill(futureLocalDateTime(3));
     await page.getByRole("button", { name: "派发任务" }).click();
     await expect(page.getByText("任务已派发，员工可在任务待办中接收。")).toBeVisible();
     taskId = (await database.task.findFirstOrThrow({ where: { title: taskTitle } })).id;
@@ -91,38 +96,12 @@ test.describe("任务闭环", () => {
     await signOut(page);
     await signIn(page, employeeUsername);
     await page.goto("/tasks");
-    let card = page.getByTestId(`task-${taskId}`);
-    await card.getByRole("button", { name: "接收任务" }).click();
-    await expect(card.getByText("任务已接收。")).toBeVisible();
-    await card.getByRole("button", { name: "开始执行" }).click();
-    await expect(card.getByText("任务已开始执行。")).toBeVisible();
-    await card.getByLabel("成果说明").fill("三版主图已完成并上传到项目素材目录");
-    await card.getByRole("button", { name: "提交验收" }).click();
-    await expect(card.getByText("成果已提交，等待验收。")).toBeVisible();
-
-    await signOut(page);
-    await signIn(page, managerUsername);
-    await page.goto("/tasks");
-    card = page.getByTestId(`task-${taskId}`);
-    await card.getByLabel("退回原因").fill("第二版核心卖点不够突出");
-    await card.getByRole("button", { name: "退回修改" }).click();
-    await expect(card.getByText("任务已退回修改，原因已记录。")).toBeVisible();
-
-    await signOut(page);
-    await signIn(page, employeeUsername);
-    await page.goto("/tasks");
-    card = page.getByTestId(`task-${taskId}`);
-    await expect(card.getByText("退回原因：第二版核心卖点不够突出")).toBeVisible();
-    await card.getByLabel("成果说明").fill("已重做第二版并突出核心卖点");
-    await card.getByRole("button", { name: "提交验收" }).click();
-
-    await signOut(page);
-    await signIn(page, managerUsername);
-    await page.goto("/tasks");
-    card = page.getByTestId(`task-${taskId}`);
-    await card.getByRole("button", { name: "验收通过" }).click();
-    await expect(card.getByText("任务已验收完成。")).toBeVisible();
-    await expect(database.task.findUniqueOrThrow({ where: { id: taskId } })).resolves.toMatchObject({ status: "COMPLETED", version: 7 });
+    const card = page.getByTestId(`task-${taskId}`);
+    await card.getByRole("listitem").filter({ hasText: "整理商品素材" }).getByRole("button", { name: "确认完成" }).click();
+    await expect(card.getByText("小任务已确认完成。")).toBeVisible();
+    await card.getByRole("listitem").filter({ hasText: "制作三版商品主图" }).getByRole("button", { name: "确认完成" }).click();
+    await expect(card.getByText("全部小任务已完成，主任务已自动完成。")).toBeVisible();
+    await expect(database.task.findUniqueOrThrow({ where: { id: taskId } })).resolves.toMatchObject({ status: "COMPLETED", completedAt: expect.any(Date) });
   });
 
   test("运营组长在任务中心发布，员工本人直接确认完成", async ({ page }) => {
@@ -135,8 +114,10 @@ test.describe("任务闭环", () => {
     await expect(page.getByRole("heading", { name: "派发新任务" })).toBeVisible();
     await page.getByLabel("关联项目").selectOption("");
     await page.getByLabel("任务标题").fill(directTaskTitle);
+    await page.getByLabel("第 1 条小任务标题").fill("汇总商品数据");
     await page.getByLabel("负责人").selectOption(employeeId);
-    await page.getByLabel("截止时间").fill(futureLocalDateTime());
+    await page.getByLabel("开始时间").fill(futureLocalDateTime(1));
+    await page.getByLabel("结束时间").fill(futureLocalDateTime(3));
     await page.getByRole("button", { name: "派发任务" }).click();
     await expect(page.getByText("任务已派发，员工可在任务待办中接收。")).toBeVisible();
     const directTask = await database.task.findFirstOrThrow({ where: { title: directTaskTitle } });
@@ -157,8 +138,8 @@ test.describe("任务闭环", () => {
     await signIn(page, employeeUsername);
     await page.goto("/tasks");
     const card = page.getByTestId(`task-${directTask.id}`);
-    await card.getByRole("button", { name: "确认完成" }).click();
-    await expect(card.getByText("任务已确认完成。")).toBeVisible();
+    await card.getByRole("listitem").filter({ hasText: "汇总商品数据" }).getByRole("button", { name: "确认完成" }).click();
+    await expect(card.getByText("全部小任务已完成，主任务已自动完成。")).toBeVisible();
     await expect(database.task.findUniqueOrThrow({ where: { id: directTask.id } }))
       .resolves.toMatchObject({ status: "COMPLETED", completedAt: expect.any(Date) });
   });
@@ -173,8 +154,8 @@ test.describe("任务闭环", () => {
   }
 });
 
-function futureLocalDateTime() {
-  const date = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000);
+function futureLocalDateTime(days = 3) {
+  const date = new Date(Date.now() + days * 24 * 60 * 60 * 1000);
   return new Intl.DateTimeFormat("sv-SE", { timeZone: "Asia/Shanghai", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hour12: false }).format(date).replace(" ", "T");
 }
 async function signIn(page: import("@playwright/test").Page, username: string) { await page.goto("/login"); await page.getByLabel("登录账号").fill(username); await page.getByLabel("密码").fill(password); await page.getByRole("button", { name: "登录" }).click(); await expect(page).toHaveURL("/"); }

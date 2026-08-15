@@ -20,7 +20,12 @@ const createSchema = z.object({
   description: z.string().trim().max(4000),
   priority: z.enum(["LOW", "MEDIUM", "HIGH", "URGENT"]),
   assigneeId: z.string().min(1),
+  startsAt: z.string().regex(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/),
   dueAt: z.string().regex(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/),
+  subtasks: z.array(z.object({
+    title: z.string().trim().min(1).max(200),
+    description: z.string().trim().max(1000),
+  })).min(1).max(20),
 });
 
 const transitionSchema = z.object({
@@ -31,19 +36,46 @@ const transitionSchema = z.object({
   note: z.string().max(2000).optional(),
 });
 
+const completeSubtaskSchema = z.object({
+  subtaskId: z.uuid(),
+  taskId: z.uuid(),
+  projectId: z.union([z.uuid(), z.literal("")]).transform((value) => value || null),
+});
+
 export async function createTaskAction(_state: TaskActionState, formData: FormData): Promise<TaskActionState> {
   const actor = await currentActor();
+  const subtasks = parseSubtasks(formData.get("subtasksJson"));
   const parsed = createSchema.safeParse({
     projectId: formData.get("projectId"), title: formData.get("title"), description: formData.get("description") ?? "",
-    priority: formData.get("priority"), assigneeId: formData.get("assigneeId"), dueAt: formData.get("dueAt"),
+    priority: formData.get("priority"), assigneeId: formData.get("assigneeId"), startsAt: formData.get("startsAt"),
+    dueAt: formData.get("dueAt"), subtasks,
   });
-  if (!parsed.success) return { status: "error", message: "请完整填写任务标题、负责人、优先级和截止时间。" };
+  if (!parsed.success) return { status: "error", message: "请完整填写任务信息、执行时间和至少一条小任务。" };
   try {
+    const startsAt = new Date(`${parsed.data.startsAt}:00+08:00`);
     const dueAt = new Date(`${parsed.data.dueAt}:00+08:00`);
-    await createPrismaTaskStore(getDatabase()).createTask(actor, { ...parsed.data, dueAt });
+    await createPrismaTaskStore(getDatabase()).createTask(actor, { ...parsed.data, startsAt, dueAt });
     revalidatePath("/tasks");
     if (parsed.data.projectId) revalidatePath(`/projects/${parsed.data.projectId}`);
     return { status: "success", message: "任务已派发，员工可在任务待办中接收。" };
+  } catch (error) {
+    return taskErrorState(error);
+  }
+}
+
+export async function completeSubtaskAction(_state: TaskActionState, formData: FormData): Promise<TaskActionState> {
+  const actor = await currentActor();
+  const parsed = completeSubtaskSchema.safeParse({
+    subtaskId: formData.get("subtaskId"),
+    taskId: formData.get("taskId"),
+    projectId: formData.get("projectId"),
+  });
+  if (!parsed.success) return { status: "error", message: "小任务信息无效，请刷新后重试。" };
+  try {
+    const result = await createPrismaTaskStore(getDatabase()).completeSubtask(actor, parsed.data.subtaskId);
+    revalidatePath("/tasks");
+    if (parsed.data.projectId) revalidatePath(`/projects/${parsed.data.projectId}`);
+    return { status: "success", message: result.parentCompleted ? "全部小任务已完成，主任务已自动完成。" : "小任务已确认完成。" };
   } catch (error) {
     return taskErrorState(error);
   }
@@ -91,6 +123,8 @@ function taskErrorState(error: unknown): TaskActionState {
       TASK_NOT_FOUND: "任务不存在。",
       TASK_VIEW_FORBIDDEN: "你无权查看该任务。",
       TASK_CONFLICT: "任务刚刚被更新，请刷新后重试。",
+      TASK_SUBTASK_FORBIDDEN: "只有主任务负责人可以确认这条小任务。",
+      TASK_SUBTASKS_INCOMPLETE: "请先逐条完成所有小任务。",
     }[error.code] };
   }
   if (error instanceof TaskWorkflowError) {
@@ -102,4 +136,13 @@ function taskErrorState(error: unknown): TaskActionState {
     }[error.code] };
   }
   return { status: "error", message: "任务操作失败，数据没有保留半成品，请稍后重试。" };
+}
+
+function parseSubtasks(value: FormDataEntryValue | null) {
+  if (typeof value !== "string" || value.length > 30_000) return null;
+  try {
+    return JSON.parse(value) as unknown;
+  } catch {
+    return null;
+  }
 }

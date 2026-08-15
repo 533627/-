@@ -160,6 +160,38 @@ describeWithDatabase.sequential("task assignment and execution", () => {
       .resolves.toMatchObject({ status: "COMPLETED", projectId: null });
   });
 
+  it("completes subtasks one by one and automatically completes the parent task", async () => {
+    const created = await store.createTask(operations, {
+      projectId: null,
+      title: "完成今日商品上新",
+      description: "按步骤完成商品上架",
+      priority: "HIGH",
+      assigneeId: employeeId,
+      startsAt: futureDate(1),
+      dueAt: futureDate(3),
+      subtasks: [
+        { title: "整理商品素材", description: "检查图片和文案" },
+        { title: "发布商品链接", description: "发布后检查详情页" },
+      ],
+    });
+    const subtasks = await database.taskSubtask.findMany({ where: { taskId: created.id }, orderBy: { position: "asc" } });
+    expect(subtasks.map((subtask) => subtask.title)).toEqual(["整理商品素材", "发布商品链接"]);
+
+    await expect(store.completeSubtask(operations, subtasks[0]!.id))
+      .rejects.toEqual(new TaskStoreError("TASK_SUBTASK_FORBIDDEN"));
+    await expect(store.completeSubtask(employee, subtasks[0]!.id))
+      .resolves.toMatchObject({ subtask: { isCompleted: true }, parentCompleted: false });
+    await expect(store.completeSubtask(employee, subtasks[0]!.id))
+      .resolves.toMatchObject({ subtask: { isCompleted: true }, parentCompleted: false });
+    await expect(database.task.findUniqueOrThrow({ where: { id: created.id } }))
+      .resolves.toMatchObject({ status: "PENDING_ACCEPTANCE", completedAt: null });
+
+    await expect(store.completeSubtask(employee, subtasks[1]!.id))
+      .resolves.toMatchObject({ subtask: { isCompleted: true }, parentCompleted: true });
+    await expect(database.task.findUniqueOrThrow({ where: { id: created.id } }))
+      .resolves.toMatchObject({ status: "COMPLETED", completedAt: expect.any(Date) });
+  });
+
   it("only offers the current publisher's tasks from yesterday for reuse", async () => {
     const now = new Date("2026-08-15T02:30:00.000Z");
     const { start } = previousChinaDayRange(now);
