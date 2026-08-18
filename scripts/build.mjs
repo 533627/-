@@ -3,6 +3,8 @@ import { existsSync } from "node:fs";
 
 import { config as loadDotenv } from "dotenv";
 
+import { prepareProductionMigrationRepair } from "./repair-production-migrations.mjs";
+
 if (!process.env.DATABASE_URL && existsSync(".env.local")) {
   loadDotenv({ path: ".env.local", override: false });
 }
@@ -47,6 +49,14 @@ if (!databaseUrl || databaseUrl === "[SENSITIVE]") {
 
   console.warn("DATABASE_URL is not set. Skipping Prisma migrations for local build.");
 } else {
+  const resolvedMigrations = await prepareProductionMigrationRepair({
+    databaseUrl,
+  });
+
+  for (const migrationName of resolvedMigrations) {
+    runPackageExecutable(["prisma", "migrate", "resolve", "--applied", migrationName]);
+  }
+
   runPackageExecutable(["prisma", "migrate", "deploy"]);
 }
 
