@@ -19,6 +19,7 @@ describe("role-aware workspace navigation", () => {
       "/accounts",
       "/departments",
       "/audit",
+      "/reference-studio-updates",
     ]);
   });
 
@@ -32,6 +33,7 @@ describe("role-aware workspace navigation", () => {
     expect(hrefs).not.toContain("/project-requests");
     expect(hrefs).toContain("/departments");
     expect(hrefs).not.toContain("/audit");
+    expect(hrefs).toContain("/reference-studio-updates");
   });
 
   it("limits employees to their daily collaboration workspace", () => {

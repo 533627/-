@@ -90,6 +90,18 @@ describe("permission matrix", () => {
     );
   });
 
+  it("allows operations admins to publish Reference Studio updates", () => {
+    expect(
+      hasCapability("OPERATIONS_ADMIN", "REFERENCE_STUDIO_UPDATE_MANAGE"),
+    ).toBe(true);
+    expect(
+      hasCapability("DEPARTMENT_MANAGER", "REFERENCE_STUDIO_UPDATE_MANAGE"),
+    ).toBe(false);
+    expect(hasCapability("EMPLOYEE", "REFERENCE_STUDIO_UPDATE_MANAGE")).toBe(
+      false,
+    );
+  });
+
   it("keeps employees out of administrative and assignment capabilities", () => {
     expect(hasCapability("EMPLOYEE", "ACCOUNT_MANAGE")).toBe(false);
     expect(hasCapability("EMPLOYEE", "DEPARTMENT_WORK_MANAGE")).toBe(false);

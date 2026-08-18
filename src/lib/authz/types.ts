@@ -29,6 +29,7 @@ export const CAPABILITIES = [
   "PROJECT_CONVERSATION_ACCESS",
   "DASHBOARD_VIEW",
   "AUDIT_LOG_VIEW",
+  "REFERENCE_STUDIO_UPDATE_MANAGE",
 ] as const;
 
 export type Capability = (typeof CAPABILITIES)[number];

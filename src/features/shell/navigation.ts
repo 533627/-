@@ -91,6 +91,14 @@ const WORKSPACE_NAVIGATION = [
     description: "检查关键账号和业务操作留痕",
     capability: "AUDIT_LOG_VIEW",
   },
+  {
+    slug: "reference-studio-updates",
+    href: "/reference-studio-updates",
+    label: "生图更新",
+    marker: "更",
+    description: "发布本地生图程序的一键更新包",
+    capability: "REFERENCE_STUDIO_UPDATE_MANAGE",
+  },
 ] as const satisfies readonly WorkspaceNavigationItem[];
 
 const ROLE_HOME_COPY: Record<Role, { title: string; description: string }> = {

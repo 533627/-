@@ -53,6 +53,13 @@ enum NotificationType {
   DIRECT_MESSAGE
 }
 
+enum ReferenceStudioPackageKind {
+  FULL_SHARE
+  LOGIC_ONLY
+  TEMPLATE_DATA
+  RULES_ONLY
+}
+
 enum ProjectStatus {
   PREPARING
   IN_PROGRESS
@@ -161,6 +168,7 @@ model User {
   createdTasks                Task[]                        @relation("TaskAssignedBy")
   taskEvents                  TaskEvent[]                   @relation("TaskEventActor")
   completedTaskSubtasks       TaskSubtask[]                 @relation("TaskSubtaskCompletedBy")
+  createdReferenceStudioReleases ReferenceStudioRelease[]    @relation("ReferenceStudioReleaseCreatedBy")
 
   @@index([role])
   @@index([isActive])
@@ -600,4 +608,28 @@ model RateLimit {
   lastRequest BigInt
 
   @@map("rateLimit")
+}
+
+model ReferenceStudioRelease {
+  id           String                     @id @default(uuid()) @db.Uuid
+  version      String                     @db.VarChar(80)
+  channel      String                     @default("stable") @db.VarChar(50)
+  title        String                     @db.VarChar(200)
+  notes        String                     @default("") @db.Text
+  packageKind  ReferenceStudioPackageKind @map("package_kind")
+  packageUrl   String                     @map("package_url") @db.Text
+  sha256       String                     @db.Char(64)
+  sizeBytes    BigInt?                    @map("size_bytes")
+  templateIds  String[]                   @default([]) @map("template_ids")
+  isPublished  Boolean                    @default(false) @map("is_published")
+  publishedAt  DateTime?                  @map("published_at") @db.Timestamptz(3)
+  createdById  String                     @map("created_by_id")
+  createdBy    User                       @relation("ReferenceStudioReleaseCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
+  createdAt    DateTime                   @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt    DateTime                   @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@unique([channel, version])
+  @@index([channel, isPublished, publishedAt])
+  @@index([createdById])
+  @@map("reference_studio_releases")
 }
